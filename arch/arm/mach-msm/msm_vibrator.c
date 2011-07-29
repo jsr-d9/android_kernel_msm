@@ -35,9 +35,14 @@
 #define HTC_PROCEDURE_SET_VIB_ON_OFF	21
 #define PMIC_VIBRATOR_LEVEL	(3000)
 
+#if 0
 static struct work_struct work_vibrator_on;
+#endif
+
 static struct work_struct work_vibrator_off;
+
 static struct hrtimer vibe_timer;
+static DEFINE_MUTEX(vibe_mtx);
 
 #ifdef CONFIG_PM8XXX_RPC_VIBRATOR
 static void set_pmic_vibrator(int on)
@@ -66,12 +71,15 @@ static void set_pmic_vibrator(int on)
 		struct rpc_request_hdr hdr;
 		uint32_t data;
 	} req;
+	if(mutex_lock_interruptible(&vibe_mtx))
+               return;
 
 	if (!vib_endpoint) {
 		vib_endpoint = msm_rpc_connect(PM_LIBPROG, PM_LIBVERS, 0);
 		if (IS_ERR(vib_endpoint)) {
 			printk(KERN_ERR "init vib rpc failed!\n");
 			vib_endpoint = 0;
+			mutex_unlock(&vibe_mtx);
 			return;
 		}
 	}
@@ -84,23 +92,31 @@ static void set_pmic_vibrator(int on)
 
 	msm_rpc_call(vib_endpoint, HTC_PROCEDURE_SET_VIB_ON_OFF, &req,
 		sizeof(req), 5 * HZ);
+
+	mutex_unlock(&vibe_mtx);
 }
 #endif
 
-static void pmic_vibrator_on(struct work_struct *work)
+static void pmic_vibrator_on(struct timed_output_dev *sdev)
 {
 	set_pmic_vibrator(1);
 }
 
-static void pmic_vibrator_off(struct work_struct *work)
+static void pmic_vibrator_off(struct timed_output_dev *sdev)
 {
 	set_pmic_vibrator(0);
 }
 
+static void pmic_vibrator_expire_off(struct work_struct *work)
+{
+	set_pmic_vibrator(0);
+}
+#if 0
 static void timed_vibrator_on(struct timed_output_dev *sdev)
 {
 	schedule_work(&work_vibrator_on);
 }
+#endif
 
 static void timed_vibrator_off(struct timed_output_dev *sdev)
 {
@@ -111,12 +127,13 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 {
 	hrtimer_cancel(&vibe_timer);
 
+
 	if (value == 0)
-		timed_vibrator_off(dev);
+		pmic_vibrator_off(dev);
 	else {
 		value = (value > 15000 ? 15000 : value);
 
-		timed_vibrator_on(dev);
+		pmic_vibrator_on(dev);
 
 		hrtimer_start(&vibe_timer,
 			      ktime_set(value / 1000, (value % 1000) * 1000000),
@@ -148,8 +165,10 @@ static struct timed_output_dev pmic_vibrator = {
 
 void __init msm_init_pmic_vibrator(void)
 {
+#if 0
 	INIT_WORK(&work_vibrator_on, pmic_vibrator_on);
-	INIT_WORK(&work_vibrator_off, pmic_vibrator_off);
+#endif
+	INIT_WORK(&work_vibrator_off, pmic_vibrator_expire_off);
 
 	hrtimer_init(&vibe_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	vibe_timer.function = vibrator_timer_func;
