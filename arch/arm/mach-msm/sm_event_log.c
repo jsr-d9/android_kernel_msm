@@ -23,23 +23,6 @@
 
 #include "smd_rpc_sym.h"
 #include "smd_rpcrouter.h"
-#include <asm/io.h>
-#include <linux/dma-mapping.h>
-#include <mach/msm_iomap.h>
-#include <asm/hardware/cache-l2x0.h>
-#include "cache-ops.h"
-
-#define CLEAN_ADDR	(L2X0_CLEAN_LINE_PA + MSM_L2CC_BASE)
-#define outer_cache_one_line(start) \
-		writel_relaxed((start), CLEAN_ADDR)
-
-#define cache_clean(vaddr)					\
-	do {							\
-		unsigned long paddr;				\
-		cache_clean_nosync_oneline(vaddr, 32);		\
-		paddr = (unsigned long)__virt_to_phys(vaddr);	\
-		outer_cache_one_line(paddr);			\
-	} while (0)
 /*
  * SM_MAXIMUM_EVENT should be (2^n)
  */
@@ -79,8 +62,10 @@ sm_periodical_status_data_t sm_periodcal_status;
  * rtc time in AP may not ready, wait about 10 seconds
  */
 static uint32_t sm_periodical_ktime_sec_report = 10;
-
-static struct sm_events_t sm_events;
+static struct sm_events_t sm_events =
+{
+	.event_mask = (0xffffffff & (~SM_IRQ_EVENT)),
+};
 
 static atomic_t sm_status_report_event;
 
@@ -93,6 +78,8 @@ static struct sm_event_filter sm_event_pre_filter[] =
 static inline void sm_get_ktime (uint32_t *sec, uint32_t *nanosec);
 static int32_t sm_add_log_event (uint32_t event_id, uint32_t param1, int param2, void *data, uint32_t data_len);
 static int32_t sm_get_log_event_and_data (sm_event_item_t *ev, uint32_t *start, uint32_t *count, uint32_t flag);
+static void sm_set_log_event_mask (uint32_t event_mask);
+static uint32_t sm_get_log_event_mask(void);
 static void sm_set_log_system_state(int want_state);
 static int32_t sm_sprint_log_info (char *buf, int32_t buf_sz, sm_event_item_t *ev, uint32_t count);
 
@@ -101,6 +88,8 @@ sm_event_ops event_log_ops =
 	.sm_add_event		= sm_add_log_event,
 	.sm_get_event_and_data	= sm_get_log_event_and_data,
 	.sm_set_system_state	= sm_set_log_system_state,
+	.sm_set_event_mask	= sm_set_log_event_mask,
+	.sm_get_event_mask	= sm_get_log_event_mask,
 	.sm_sprint_info		= sm_sprint_log_info,
 };
 
@@ -113,21 +102,12 @@ static size_t sm_sprint_battery_status (sm_msm_battery_data_t *battery_info, cha
 {
 	size_t len = 0;
 
-	if (battery_info->charger_status == CHARGER_STATUS_NULL)
-		len += snprintf(buf + len, buf_sz - len, "charger null, ");
-	else if (battery_info->charger_status == CHARGER_STATUS_GOOD)
+	if (battery_info->charger_status == CHARGER_STATUS_GOOD)
 		len += snprintf(buf + len, buf_sz - len, "charger good, ");
 	else if (battery_info->charger_status == CHARGER_STATUS_WEAK)
 		len += snprintf(buf + len, buf_sz - len, "charger weak, ");
-
-	if (battery_info->charger_type == CHARGER_TYPE_USB_UNKNOWN)
-		len += snprintf(buf + len, buf_sz - len, "unknown charger, ");
-	else if (battery_info->charger_type == CHARGER_TYPE_USB_PC)
-		len += snprintf(buf + len, buf_sz - len, "pc usb charger, ");
-	else if (battery_info->charger_type == CHARGER_TYPE_USB_WALL)
-		len += snprintf(buf + len, buf_sz - len, "wall usb charger, ");
-	else if (battery_info->charger_type == CHARGER_TYPE_USB_CARKIT)
-		len += snprintf(buf + len, buf_sz - len, "usb carkit, ");
+	else if (battery_info->charger_status == CHARGER_STATUS_NULL)
+		len += snprintf(buf + len, buf_sz - len, "none charger, ");
 
 	len += snprintf(buf + len, buf_sz - len, "battery voltage = %u mV, ",
 		battery_info->battery_voltage);
@@ -478,47 +458,12 @@ static void sm_report_periodical_status (void)
 		0, (void *)&sm_periodcal_status, sizeof(sm_periodical_status_data_t));
 }
 
-static __always_inline void log_irq_info(unsigned long ip,  unsigned int flags, unsigned long caller)
-{
-	unsigned int irq_idx;
-
-#ifdef CONFIG_SMP
-	irq_idx = atomic_inc_return(&g_track_index);
-	irq_idx = irq_idx & (TRACK_BUF_SIZE - 1);
-#else
-	g_track_index++;
-	irq_idx = g_track_index & (TRACK_BUF_SIZE - 1);
-#endif
-	g_track_irq_buf[irq_idx].ip = ip;
-	g_track_irq_buf[irq_idx].flags = flags;
-	g_track_irq_buf[irq_idx].caller = caller;
-#ifdef CONFIG_SMP
-	g_track_irq_buf[irq_idx].cpuid = smp_processor_id();
-#endif
-	/*
-	 * g_track_irq_buf[irq_idx].cycles = 0;
-	 */
-/*
-	cache_clean((unsigned long)(g_track_irq_buf + g_track_index));
-	cache_clean((unsigned long)(&g_track_index));
-*/
-}
-
-static int32_t sm_add_log_event(uint32_t event_id, uint32_t param1, int param2, void *data, uint32_t data_len)
+static int32_t sm_add_event_ex (uint32_t event_id, uint32_t param1, int param2, void *data, uint32_t data_len)
 {
 	sm_event_item_t *ev;
 	sm_event_data_t *ev_data;
 	uint32_t cur_index;
 	int32_t rc;
-
-	/* for performace reason, irqs on/off occurs more frequently */
-	if (likely(event_id & SM_IRQ_ONOFF_EVENT)) {
-		/* no need to check if data is NULL since it
-		 * is called by track_hardirqs_on/off
-		 */
-		log_irq_info(param1, param2, ((unsigned long*)data)[0]);
-		return 0;
-	}
 
 	rc = sm_event_pre_handle (event_id, param1, param2, data, data_len);
 	if (rc ) {
@@ -568,25 +513,6 @@ static int32_t sm_log_event_init (void)
 			__func__, sizeof(sm_event_item_t)*SM_MAXIMUM_EVENT);
 		return -ENOMEM;
 	}
-#ifdef CONFIG_MSM_AMSS_ENHANCE_DEBUG
-	input.extension.len = 1;
-	input.extension.data[0] = (uint32_t)get_phys((unsigned long)&sm_events.write_pos);
-	input.address = (uint32_t)__virt_to_phys((unsigned long)sm_events.event_pool);
-	input.size = sizeof(sm_event_item_t) * SM_MAXIMUM_EVENT;
-	strncpy(input.file_name, "smevent",
-			NZI_ITEM_FILE_NAME_LENGTH);
-	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
-	send_modem_logaddr(&input);
-
-	input.extension.len = 1;
-	input.extension.data[0] = (uint32_t)__virt_to_phys((unsigned long)&g_track_index);
-	input.address = (uint32_t)__virt_to_phys((unsigned long)g_track_irq_buf);
-	input.size = sizeof(struct traceirq_entry) * TRACK_BUF_SIZE;
-	strncpy(input.file_name, "irqx",
-			NZI_ITEM_FILE_NAME_LENGTH);
-	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
-	send_modem_logaddr(&input);
-#endif
 
 	init_waitqueue_head(&(sm_events.wait_wakeone_q));
 	init_waitqueue_head(&(sm_events.wait_wakeall_q));
@@ -671,10 +597,29 @@ retry:
 	return rc;
 }
 
+static void sm_set_log_event_mask (uint32_t event_mask)
+{
+	sm_events.event_mask = event_mask;
+}
+
+static uint32_t sm_get_log_event_mask(void)
+{
+	return sm_events.event_mask;
+}
+
 static void sm_set_log_system_state(int want_state)
 {
 	if(want_state > SM_STATE_NONE && want_state < SM_STATE_INVALID)
 		sm_current_state = want_state;
+}
+
+static int32_t sm_add_log_event (uint32_t event_id, uint32_t param1, int param2, void *data, uint32_t data_len)
+{
+	if ((sm_events.event_mask & event_id) == event_id) {
+		return sm_add_event_ex (event_id, param1, param2, data, data_len);
+	}
+
+	return 0;//message was masked
 }
 
 int32_t sm_log_event_register (void)

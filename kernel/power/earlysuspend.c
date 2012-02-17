@@ -1,6 +1,7 @@
 /* kernel/power/earlysuspend.c
  *
  * Copyright (C) 2005-2008 Google, Inc.
+ * Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -19,6 +20,11 @@
 #include <linux/rtc.h>
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
+
+#ifdef CONFIG_MSM_SM_EVENT_LOG
+#include <linux/sm_event_log.h>
+#include <linux/sm_event.h>
+#endif
 
 #include "power.h"
 
@@ -77,6 +83,11 @@ static void early_suspend(struct work_struct *work)
 	int abort = 0;
 
 	mutex_lock(&early_suspend_lock);
+#ifdef CONFIG_MSM_SM_EVENT_LOG
+	sm_set_system_state (SM_STATE_EARLYSUSPEND);
+	sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_EARLY_SUSPEND, SM_EVENT_START, 0, NULL, 0);
+	add_active_wakelock_event();
+#endif
 	spin_lock_irqsave(&state_lock, irqflags);
 	if (state == SUSPEND_REQUESTED)
 		state |= SUSPENDED;
@@ -93,6 +104,7 @@ static void early_suspend(struct work_struct *work)
 
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("early_suspend: call handlers\n");
+
 	list_for_each_entry(pos, &early_suspend_handlers, link) {
 		if (pos->suspend != NULL) {
 			if (debug_mask & DEBUG_VERBOSE)
@@ -105,6 +117,9 @@ static void early_suspend(struct work_struct *work)
 	suspend_sys_sync_queue();
 abort:
 	spin_lock_irqsave(&state_lock, irqflags);
+#ifdef CONFIG_MSM_SM_EVENT_LOG
+	sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_EARLY_SUSPEND, SM_EVENT_END, 0, NULL, 0);
+#endif
 	if (state == SUSPEND_REQUESTED_AND_SUSPENDED)
 		wake_unlock(&main_wake_lock);
 	spin_unlock_irqrestore(&state_lock, irqflags);
@@ -117,6 +132,10 @@ static void late_resume(struct work_struct *work)
 	int abort = 0;
 
 	mutex_lock(&early_suspend_lock);
+#ifdef CONFIG_MSM_SM_EVENT_LOG
+	sm_set_system_state (SM_STATE_LATERESUME);
+	sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_LATE_RESUME, SM_EVENT_START, 0, NULL, 0);
+#endif
 	spin_lock_irqsave(&state_lock, irqflags);
 	if (state == SUSPENDED)
 		state &= ~SUSPENDED;
@@ -142,6 +161,10 @@ static void late_resume(struct work_struct *work)
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("late_resume: done\n");
 abort:
+#ifdef CONFIG_MSM_SM_EVENT_LOG
+	sm_set_system_state (SM_STATE_RUNNING);
+	sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_LATE_RESUME, SM_EVENT_END, 0, NULL, 0);
+#endif
 	mutex_unlock(&early_suspend_lock);
 }
 

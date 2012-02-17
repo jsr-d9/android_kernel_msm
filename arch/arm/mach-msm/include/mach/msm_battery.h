@@ -40,7 +40,7 @@ enum {
 	/* Client's could not be found for enabling or disabling the individual
 	 * client */
 	BATTERY_ENABLE_DISABLE_INDIVIDUAL_CLIENT_FAILED  = 64,
-	BATTERY_LAST_ERROR = 128
+	BATTERY_LAST_ERROR = 128,
 };
 
 enum {
@@ -88,4 +88,5 @@ uint32_t msm_batt_get_batt_voltage (void);
 #endif
 int msm_batt_fuel_register(struct msm_batt_gauge* batt);
 void msm_batt_fuel_unregister(struct msm_batt_gauge* batt);
+
 #endif
