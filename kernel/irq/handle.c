@@ -30,9 +30,20 @@
 
 #include "internals.h"
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 #include <linux/sm_event_log.h>
 #include <linux/sm_event.h>
+#include <linux/module.h>
+__section(.log.data) struct traceirq_entry track_irq_buf[PAGE_SIZE];
+#ifdef CONFIG_SMP
+__section(.log.data) atomic_t g_track_index = ATOMIC_INIT(0);
+#else
+__section(.log.data) int g_track_index = 0;
+#endif
+
+struct traceirq_entry *g_track_irq_buf = track_irq_buf;
+EXPORT_SYMBOL(g_track_irq_buf);
+EXPORT_SYMBOL(g_track_index);
 #endif
 
 /**
@@ -149,7 +160,7 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
 {
 	irqreturn_t retval = IRQ_NONE;
 	unsigned int random = 0, irq = desc->irq_data.irq;
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_msm_irq_data_t sm_irq;
 #endif
 
@@ -157,7 +168,7 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
 		irqreturn_t res;
 
 		trace_irq_handler_entry(irq, action);
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 		sm_irq.func_addr = (unsigned int)action->handler;
 		sm_irq.irq_num = irq;
 		sm_add_event(SM_IRQ_EVENT | IRQ_EVENT_ENTER,
@@ -167,7 +178,7 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
 		trace_irq_handler_exit(irq, action, res);
 
 /*
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 		sm_add_event(SM_IRQ_EVENT | IRQ_EVENT_LEAVE,
 			SM_EVENT_END, 0, &sm_irq, sizeof(sm_msm_irq_data_t));
 #endif

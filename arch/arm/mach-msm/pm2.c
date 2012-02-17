@@ -46,7 +46,7 @@
 #include <mach/proc_comm.h>
 #include <asm/smp_scu.h>
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 #include <linux/sm_event_log.h>
 #include <linux/sm_event.h>
 #endif
@@ -862,7 +862,7 @@ static int msm_pm_power_collapse
 	struct msm_pm_polled_group state_grps[2];
 	unsigned long saved_acpuclk_rate;
 	int collapsed = 0;
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	uint64_t sclk_suspend_time = 0, sclk_resume_time, sclk_period;
 #endif
 	int ret;
@@ -950,7 +950,7 @@ static int msm_pm_power_collapse
 		goto power_collapse_early_exit;
 	}
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	if (!from_idle)
 		sclk_suspend_time = msm_timer_get_sclk_time(&sclk_period);
 #endif
@@ -967,7 +967,7 @@ static int msm_pm_power_collapse
 		goto power_collapse_early_exit;
 	}
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	if (!from_idle) {
 		sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_SUSPEND, SM_EVENT_END, 0, 0, 0);
 	}
@@ -1112,7 +1112,7 @@ static int msm_pm_power_collapse
 		goto power_collapse_restore_gpio_bail;
 	}
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	if (!from_idle) {
 		int64_t time;
 		sm_set_system_state (SM_STATE_RESUME);

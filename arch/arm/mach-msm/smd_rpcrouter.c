@@ -53,7 +53,7 @@
 #include "smd_rpc_sym.h"
 #include "smd_private.h"
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
   #include <linux/sm_event_log.h>
   #include <linux/sm_event.h>
 #endif
@@ -1571,7 +1571,7 @@ int msm_rpc_write(struct msm_rpc_endpoint *ept, void *buffer, int count)
 	int first_pkt = 1;
 	uint32_t mid;
 	unsigned long flags;
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_msm_rpc_data_t tmp;
 #endif
 
@@ -1672,7 +1672,7 @@ int msm_rpc_write(struct msm_rpc_endpoint *ept, void *buffer, int count)
 	}
 
  write_release_lock:
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	//RPC CALL
 	if (rq->type == 0) {
 		tmp.prog = ept->dst_prog;
@@ -1859,7 +1859,7 @@ int __msm_rpc_read(struct msm_rpc_endpoint *ept,
 	struct msm_rpc_reply *reply;
 	unsigned long flags;
 	int rc;
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_msm_rpc_data_t tmp;
 #endif
 
@@ -1933,7 +1933,7 @@ int __msm_rpc_read(struct msm_rpc_endpoint *ept,
 
 	*frag_ret = pkt->first;
 	rq = (void*) pkt->first->data;
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 
 	//RPC CALL
 	if (rq->type == 0) {

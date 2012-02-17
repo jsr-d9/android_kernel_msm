@@ -25,7 +25,7 @@
 #endif
 #include "power.h"
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 #include <linux/sm_event_log.h>
 #include <linux/sm_event.h>
 #endif
@@ -205,7 +205,7 @@ static void update_sleep_wait_stats_locked(int done)
 }
 #endif
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 void add_active_wakelock_event(void)
 {
 	struct wake_lock *lock, *n;
@@ -579,7 +579,7 @@ static void wake_lock_internal(
 void wake_lock(struct wake_lock *lock)
 {
 	wake_lock_internal(lock, 0, 0);
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_add_event(SM_WAKELOCK_EVENT | WAKELOCK_EVENT_ON, (uint32_t)(lock->expires - jiffies), 0, (void *)lock->name, strlen(lock->name)+1);
 #endif
 }
@@ -588,7 +588,7 @@ EXPORT_SYMBOL(wake_lock);
 void wake_lock_timeout(struct wake_lock *lock, long timeout)
 {
 	wake_lock_internal(lock, timeout, 1);
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_add_event(SM_WAKELOCK_EVENT | WAKELOCK_EVENT_ON, (uint32_t)(lock->expires - jiffies), 0, (void *)lock->name, strlen(lock->name)+1);
 #endif
 }
@@ -607,7 +607,7 @@ void wake_unlock(struct wake_lock *lock)
 		pr_info("wake_unlock: %s\n", lock->name);
 	lock->flags &= ~(WAKE_LOCK_ACTIVE | WAKE_LOCK_AUTO_EXPIRE);
 	list_del(&lock->link);
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_add_event(SM_WAKELOCK_EVENT | WAKELOCK_EVENT_OFF, (uint32_t)(lock->expires - jiffies), 0, (void *)lock->name, strlen(lock->name)+1);
 #endif
 	list_add(&lock->link, &inactive_locks);

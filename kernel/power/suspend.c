@@ -28,7 +28,7 @@
 #include <linux/rtc.h>
 #include <trace/events/power.h>
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 #include <linux/sm_event_log.h>
 #include <linux/sm_event.h>
 #endif
@@ -285,7 +285,7 @@ static int enter_state(suspend_state_t state)
 	if (!mutex_trylock(&pm_mutex))
 		return -EBUSY;
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_set_system_state (SM_STATE_SUSPEND);
 	sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_SUSPEND, SM_EVENT_START, 0, NULL, 0);
 #endif
@@ -309,7 +309,7 @@ static int enter_state(suspend_state_t state)
  Unlock:
 	mutex_unlock(&pm_mutex);
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_RESUME, SM_EVENT_END, 0, NULL, 0);
 #endif
 	return error;

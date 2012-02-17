@@ -13,6 +13,7 @@
 
 #ifndef _SM_EVENT_LOG_H
 #define _SM_EVENT_LOG_H
+
 /*
  * wakeup reason
  * refer to struct of msm_pm_smem_t in pm2.c
@@ -113,6 +114,18 @@ typedef enum {
 
 }sm_state;
 
+struct traceirq_entry {
+	unsigned long   ip;
+	unsigned int    flags;
+};
+extern struct traceirq_entry *g_track_irq_buf;
+#ifdef CONFIG_SMP
+extern atomic_t g_track_index;
+#else
+extern int g_track_index;
+#endif
+
+
 #define VERSION_NUMBER 0x0
 #define HIWORD(x) (((x)&0xffff)<<16)
 #define LOWORD(x) ((x)&0xffff)
@@ -128,6 +141,7 @@ typedef enum {
 #define SM_IRQ_EVENT			HIWORD(0x20)
 #define SM_STATUS_EVENT			HIWORD(0x40)
 #define SM_STATE_MACHINE_EVENT		HIWORD(0x80)
+#define SM_IRQ_ONOFF_EVENT		HIWORD(0x100)
 
 /*
  * minor event of SM_POWER_EVENT, maximum 16 events

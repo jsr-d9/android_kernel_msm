@@ -62,10 +62,8 @@ sm_periodical_status_data_t sm_periodcal_status;
  * rtc time in AP may not ready, wait about 10 seconds
  */
 static uint32_t sm_periodical_ktime_sec_report = 10;
-static struct sm_events_t sm_events =
-{
-	.event_mask = (0xffffffff & (~SM_IRQ_EVENT)),
-};
+
+static struct sm_events_t sm_events;
 
 static atomic_t sm_status_report_event;
 
@@ -78,8 +76,6 @@ static struct sm_event_filter sm_event_pre_filter[] =
 static inline void sm_get_ktime (uint32_t *sec, uint32_t *nanosec);
 static int32_t sm_add_log_event (uint32_t event_id, uint32_t param1, int param2, void *data, uint32_t data_len);
 static int32_t sm_get_log_event_and_data (sm_event_item_t *ev, uint32_t *start, uint32_t *count, uint32_t flag);
-static void sm_set_log_event_mask (uint32_t event_mask);
-static uint32_t sm_get_log_event_mask(void);
 static void sm_set_log_system_state(int want_state);
 static int32_t sm_sprint_log_info (char *buf, int32_t buf_sz, sm_event_item_t *ev, uint32_t count);
 
@@ -88,8 +84,6 @@ sm_event_ops event_log_ops =
 	.sm_add_event		= sm_add_log_event,
 	.sm_get_event_and_data	= sm_get_log_event_and_data,
 	.sm_set_system_state	= sm_set_log_system_state,
-	.sm_set_event_mask	= sm_set_log_event_mask,
-	.sm_get_event_mask	= sm_get_log_event_mask,
 	.sm_sprint_info		= sm_sprint_log_info,
 };
 
@@ -458,12 +452,27 @@ static void sm_report_periodical_status (void)
 		0, (void *)&sm_periodcal_status, sizeof(sm_periodical_status_data_t));
 }
 
-static int32_t sm_add_event_ex (uint32_t event_id, uint32_t param1, int param2, void *data, uint32_t data_len)
+static int32_t sm_add_log_event(uint32_t event_id, uint32_t param1, int param2, void *data, uint32_t data_len)
 {
 	sm_event_item_t *ev;
 	sm_event_data_t *ev_data;
+	unsigned int irq_idx;
 	uint32_t cur_index;
 	int32_t rc;
+
+	/* for performace reason, irqs on/off occurs more frequently */
+	if (likely(event_id & SM_IRQ_ONOFF_EVENT)) {
+#ifdef CONFIG_SMP
+		irq_idx = atomic_inc_return(&g_track_index);
+		irq_idx = irq_idx & (PAGE_SIZE - 1);
+#else
+		g_track_index++;
+		irq_idx = g_track_index & (PAGE_SIZE - 1);
+#endif
+		g_track_irq_buf[irq_idx].ip = param1;
+		g_track_irq_buf[irq_idx].flags = param2;
+		return 0;
+	}
 
 	rc = sm_event_pre_handle (event_id, param1, param2, data, data_len);
 	if (rc ) {
@@ -597,29 +606,10 @@ retry:
 	return rc;
 }
 
-static void sm_set_log_event_mask (uint32_t event_mask)
-{
-	sm_events.event_mask = event_mask;
-}
-
-static uint32_t sm_get_log_event_mask(void)
-{
-	return sm_events.event_mask;
-}
-
 static void sm_set_log_system_state(int want_state)
 {
 	if(want_state > SM_STATE_NONE && want_state < SM_STATE_INVALID)
 		sm_current_state = want_state;
-}
-
-static int32_t sm_add_log_event (uint32_t event_id, uint32_t param1, int param2, void *data, uint32_t data_len)
-{
-	if ((sm_events.event_mask & event_id) == event_id) {
-		return sm_add_event_ex (event_id, param1, param2, data, data_len);
-	}
-
-	return 0;//message was masked
 }
 
 int32_t sm_log_event_register (void)

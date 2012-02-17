@@ -21,7 +21,7 @@
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 #include <linux/sm_event_log.h>
 #include <linux/sm_event.h>
 #endif
@@ -83,7 +83,7 @@ static void early_suspend(struct work_struct *work)
 	int abort = 0;
 
 	mutex_lock(&early_suspend_lock);
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_set_system_state (SM_STATE_EARLYSUSPEND);
 	sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_EARLY_SUSPEND, SM_EVENT_START, 0, NULL, 0);
 	add_active_wakelock_event();
@@ -117,7 +117,7 @@ static void early_suspend(struct work_struct *work)
 	suspend_sys_sync_queue();
 abort:
 	spin_lock_irqsave(&state_lock, irqflags);
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_EARLY_SUSPEND, SM_EVENT_END, 0, NULL, 0);
 #endif
 	if (state == SUSPEND_REQUESTED_AND_SUSPENDED)
@@ -132,7 +132,7 @@ static void late_resume(struct work_struct *work)
 	int abort = 0;
 
 	mutex_lock(&early_suspend_lock);
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_set_system_state (SM_STATE_LATERESUME);
 	sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_LATE_RESUME, SM_EVENT_START, 0, NULL, 0);
 #endif
@@ -161,7 +161,7 @@ static void late_resume(struct work_struct *work)
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("late_resume: done\n");
 abort:
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	sm_set_system_state (SM_STATE_RUNNING);
 	sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_LATE_RESUME, SM_EVENT_END, 0, NULL, 0);
 #endif

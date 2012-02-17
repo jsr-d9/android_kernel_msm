@@ -2160,11 +2160,16 @@ config MSM_RUN_QUEUE_STATS
 
 config MSM_SM_EVENT
 	bool "Enable system event monitor
+	select UNCACHED_BUF
 	default n
 
 config MSM_SM_EVENT_LOG
 	depends on MSM_SM_EVENT
-	bool "Enable system event log"
+	tristate "Enable system event log"
+	default n
+
+config UNCACHED_BUF
+	bool "reserve uncached memory segment"
 	default n
 
 config MSM_SLEEP_MONITOR

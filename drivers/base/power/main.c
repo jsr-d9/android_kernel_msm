@@ -36,7 +36,7 @@
 
 typedef int (*pm_callback_t)(struct device *);
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 #include <linux/sm_event_log.h>
 #include <linux/sm_event.h>
 #endif

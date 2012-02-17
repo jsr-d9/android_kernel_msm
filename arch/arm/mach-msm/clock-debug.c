@@ -24,7 +24,7 @@
 
 #include "clock.h"
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 #include <linux/sm_event.h>
 #include <linux/sm_event_log.h>
 #endif
@@ -198,7 +198,7 @@ void clock_debug_print_enabled(void)
 	unsigned i;
 	int cnt = 0;
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 	struct clk *clk;
 	for (i = 0; i < num_msm_clocks; i++) {
 		clk = msm_clocks[i].clk;

@@ -71,7 +71,7 @@ int wake_lock_active(struct wake_lock *lock);
  */
 long has_wake_lock(int type);
 
-#ifdef CONFIG_MSM_SM_EVENT_LOG
+#ifdef CONFIG_MSM_SM_EVENT
 void add_active_wakelock_event(void);
 #endif
 
