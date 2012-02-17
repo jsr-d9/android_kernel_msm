@@ -34,7 +34,11 @@
 #include <linux/sm_event_log.h>
 #include <linux/sm_event.h>
 #include <linux/module.h>
-__section(.log.data) struct traceirq_entry track_irq_buf[PAGE_SIZE];
+/*
+struct traceirq_entry track_irq_buf[TRACK_BUF_SIZE] ____cacheline_aligned;
+int g_track_index __cacheline_aligned = 0;
+*/
+__section(.log.data) struct traceirq_entry track_irq_buf[TRACK_BUF_SIZE];
 #ifdef CONFIG_SMP
 __section(.log.data) atomic_t g_track_index = ATOMIC_INIT(0);
 #else

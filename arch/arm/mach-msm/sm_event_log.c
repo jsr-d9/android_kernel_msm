@@ -23,6 +23,23 @@
 
 #include "smd_rpc_sym.h"
 #include "smd_rpcrouter.h"
+#include <asm/io.h>
+#include <linux/dma-mapping.h>
+#include <mach/msm_iomap.h>
+#include <asm/hardware/cache-l2x0.h>
+#include "cache-ops.h"
+
+#define CLEAN_ADDR	(L2X0_CLEAN_LINE_PA + MSM_L2CC_BASE)
+#define outer_cache_one_line(start) \
+		writel_relaxed((start), CLEAN_ADDR)
+
+#define cache_clean(vaddr)					\
+	do {							\
+		unsigned long paddr;				\
+		cache_clean_nosync_oneline(vaddr, 32);		\
+		paddr = (unsigned long)__virt_to_phys(vaddr);	\
+		outer_cache_one_line(paddr);			\
+	} while (0)
 /*
  * SM_MAXIMUM_EVENT should be (2^n)
  */
@@ -452,25 +469,38 @@ static void sm_report_periodical_status (void)
 		0, (void *)&sm_periodcal_status, sizeof(sm_periodical_status_data_t));
 }
 
+static __always_inline void log_irq_info(unsigned long ip,  unsigned int flags)
+{
+	unsigned int irq_idx;
+
+#ifdef CONFIG_SMP
+	irq_idx = atomic_inc_return(&g_track_index);
+	irq_idx = irq_idx & (TRACK_BUF_SIZE - 1);
+#else
+	g_track_index++;
+	irq_idx = g_track_index & (TRACK_BUF_SIZE - 1);
+#endif
+	g_track_irq_buf[irq_idx].ip = ip;
+	g_track_irq_buf[irq_idx].flags = flags;
+	/*
+	 * g_track_irq_buf[irq_idx].cycles = 0;
+	 */
+/*
+	cache_clean((unsigned long)(g_track_irq_buf + g_track_index));
+	cache_clean((unsigned long)(&g_track_index));
+*/
+}
+
 static int32_t sm_add_log_event(uint32_t event_id, uint32_t param1, int param2, void *data, uint32_t data_len)
 {
 	sm_event_item_t *ev;
 	sm_event_data_t *ev_data;
-	unsigned int irq_idx;
 	uint32_t cur_index;
 	int32_t rc;
 
 	/* for performace reason, irqs on/off occurs more frequently */
 	if (likely(event_id & SM_IRQ_ONOFF_EVENT)) {
-#ifdef CONFIG_SMP
-		irq_idx = atomic_inc_return(&g_track_index);
-		irq_idx = irq_idx & (PAGE_SIZE - 1);
-#else
-		g_track_index++;
-		irq_idx = g_track_index & (PAGE_SIZE - 1);
-#endif
-		g_track_irq_buf[irq_idx].ip = param1;
-		g_track_irq_buf[irq_idx].flags = param2;
+		log_irq_info(param1, param2);
 		return 0;
 	}
 

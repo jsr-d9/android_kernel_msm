@@ -115,9 +115,12 @@ typedef enum {
 }sm_state;
 
 struct traceirq_entry {
-	unsigned long   ip;
-	unsigned int    flags;
+	unsigned long		ip;
+	unsigned int		flags;
+	unsigned long long 	cycles;
+	unsigned int		reserved[4];
 };
+#define TRACK_BUF_SIZE	(PAGE_SIZE << 2)
 extern struct traceirq_entry *g_track_irq_buf;
 #ifdef CONFIG_SMP
 extern atomic_t g_track_index;

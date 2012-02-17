@@ -404,7 +404,8 @@ static int __init sm_event_init(void)
 	}
 
 	debugfs_init ();
-	sm_event_dir = debugfs_create_dir("sm_event", 0);
+	sm_event_dir = debugfs_create_file("sm_event", S_IFDIR | S_IRWXU | S_IRWXG | S_IRWXO,
+						NULL, NULL, NULL);
 	if (IS_ERR(sm_event_dir))
 		goto debugfs_create_dir_fail;
 
