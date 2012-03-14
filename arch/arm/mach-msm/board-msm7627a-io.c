@@ -126,7 +126,7 @@ static const unsigned short keymap_8625[] = {
 	KEY_VOLUMEDOWN,
 };
 
-static const unsigned short keymap_8625_evt[] = {
+static const unsigned short keymap_8625_qrd5[] = {
 	KEY_VOLUMEDOWN,
 	KEY_VOLUMEUP,
 };
@@ -262,7 +262,7 @@ static const u8 mxt_config_data[] = {
 	80, 100, 15, 3,
 };
 
-static const u8 mxt_config_data_evt[] = {
+static const u8 mxt_config_data_qrd5[] = {
 	/* T6 Object */
 	0, 0, 0, 0, 0, 0,
 	/* T38 Object */
@@ -689,43 +689,43 @@ static void __init ft5x06_touchpad_setup(void)
 }
 
 /* SKU3/SKU7 keypad device information */
-#define KP_INDEX_SKU3(row, col) ((row)*ARRAY_SIZE(kp_col_gpios_sku3) + (col))
-static unsigned int kp_row_gpios_sku3[] = {31, 32};
-static unsigned int kp_col_gpios_sku3[] = {36, 37};
+#define KP_INDEX_SKU3(row, col) ((row)*ARRAY_SIZE(kp_col_gpios_qrd3) + (col))
+static unsigned int kp_row_gpios_qrd3[] = {31, 32};
+static unsigned int kp_col_gpios_qrd3[] = {36, 37};
 
-static const unsigned short keymap_sku3[] = {
+static const unsigned short keymap_qrd3[] = {
 	[KP_INDEX_SKU3(0, 0)] = KEY_VOLUMEUP,
 	[KP_INDEX_SKU3(0, 1)] = KEY_VOLUMEDOWN,
 	[KP_INDEX_SKU3(1, 1)] = KEY_CAMERA,
 };
 
-static struct gpio_event_matrix_info kp_matrix_info_sku3 = {
+static struct gpio_event_matrix_info kp_matrix_info_qrd3 = {
 	.info.func      = gpio_event_matrix_func,
-	.keymap         = keymap_sku3,
-	.output_gpios   = kp_row_gpios_sku3,
-	.input_gpios    = kp_col_gpios_sku3,
-	.noutputs       = ARRAY_SIZE(kp_row_gpios_sku3),
-	.ninputs        = ARRAY_SIZE(kp_col_gpios_sku3),
+	.keymap         = keymap_qrd3,
+	.output_gpios   = kp_row_gpios_qrd3,
+	.input_gpios    = kp_col_gpios_qrd3,
+	.noutputs       = ARRAY_SIZE(kp_row_gpios_qrd3),
+	.ninputs        = ARRAY_SIZE(kp_col_gpios_qrd3),
 	.settle_time.tv64 = 40 * NSEC_PER_USEC,
 	.poll_time.tv64 = 20 * NSEC_PER_MSEC,
 	.flags          = GPIOKPF_LEVEL_TRIGGERED_IRQ | GPIOKPF_DRIVE_INACTIVE |
 				GPIOKPF_PRINT_UNMAPPED_KEYS,
 };
 
-static struct gpio_event_info *kp_info_sku3[] = {
-	&kp_matrix_info_sku3.info,
+static struct gpio_event_info *kp_info_qrd3[] = {
+	&kp_matrix_info_qrd3.info,
 };
-static struct gpio_event_platform_data kp_pdata_sku3 = {
+static struct gpio_event_platform_data kp_pdata_qrd3 = {
 	.name           = "7x27a_kp",
-	.info           = kp_info_sku3,
-	.info_count     = ARRAY_SIZE(kp_info_sku3)
+	.info           = kp_info_qrd3,
+	.info_count     = ARRAY_SIZE(kp_info_qrd3)
 };
 
-static struct platform_device kp_pdev_sku3 = {
+static struct platform_device kp_pdev_qrd3 = {
 	.name   = GPIO_EVENT_DEV_NAME,
 	.id     = -1,
 	.dev    = {
-		.platform_data  = &kp_pdata_sku3,
+		.platform_data  = &kp_pdata_qrd3,
 	},
 };
 
@@ -815,12 +815,12 @@ void __init qrd7627a_add_io_devices(void)
 					synaptic_i2c_clearpad3k,
 					ARRAY_SIZE(synaptic_i2c_clearpad3k));
 	} else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb() ||
-			machine_is_msm8625_evt()) {
-		/* Use configuration data for EVT */
-		if (machine_is_msm8625_evt()) {
-			mxt_config_array[0].config = mxt_config_data_evt;
+			machine_is_msm8625_qrd5()) {
+		/* Use configuration data for sku5 */
+		if (machine_is_msm8625_qrd5()) {
+			mxt_config_array[0].config = mxt_config_data_qrd5;
 			mxt_config_array[0].config_length =
-					ARRAY_SIZE(mxt_config_data_evt);
+					ARRAY_SIZE(mxt_config_data_qrd5);
 			mxt_platform_data.panel_maxy = 875;
 			mxt_platform_data.need_calibration = true;
 			mxt_vkey_setup();
@@ -858,14 +858,14 @@ void __init qrd7627a_add_io_devices(void)
 #endif
 
 	/* keypad */
-	if (machine_is_msm8625_evt())
-		kp_matrix_info_8625.keymap = keymap_8625_evt;
+	if (machine_is_msm8625_qrd5())
+		kp_matrix_info_8625.keymap = keymap_8625_qrd5;
 
 	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb() ||
-			machine_is_msm8625_evt())
+			machine_is_msm8625_qrd5())
 		platform_device_register(&kp_pdev_8625);
 	else if (machine_is_msm7627a_qrd3() || machine_is_msm8625_qrd7())
-		platform_device_register(&kp_pdev_sku3);
+		platform_device_register(&kp_pdev_qrd3);
 
 	/* leds */
 	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb() ||

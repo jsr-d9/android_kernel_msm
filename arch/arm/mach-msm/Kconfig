@@ -566,15 +566,15 @@ config MACH_MSM8625_QRD7
 	default y
 	bool "MSM8625 QRD7"
 	help
-	  Support for the Qualcomm MSM8625 Reference Design.
+	  Support for the Qualcomm MSM8625 SKU7 Reference Design.
 
-config MACH_MSM8625_EVT
+config MACH_MSM8625_QRD5
 	depends on ARCH_MSM8625
 	depends on !MSM_STACKED_MEMORY
 	default y
-	bool "MSM8625 EVT"
+	bool "MSM8625 QRD5"
 	help
-	  Support for the Qualcomm MSM8625 Reference Design.
+	  Support for the Qualcomm MSM8625 SKU5 Reference Design.
 
 config MACH_MSM7X30_SURF
        depends on ARCH_MSM7X30
