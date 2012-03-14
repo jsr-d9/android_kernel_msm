@@ -15,6 +15,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/sched.h>
+#include <linux/mm.h>
 #include "timer.h"
 
 #include <linux/sm_event.h>
@@ -28,6 +29,7 @@
 #include <mach/msm_iomap.h>
 #include <asm/hardware/cache-l2x0.h>
 #include "cache-ops.h"
+#include <mach/oem_rapi_client.h>
 
 #define CLEAN_ADDR	(L2X0_CLEAN_LINE_PA + MSM_L2CC_BASE)
 #define outer_cache_one_line(start) \
@@ -551,14 +553,67 @@ static int32_t sm_add_log_event(uint32_t event_id, uint32_t param1, int param2, 
 	return 0;
 }
 
+static unsigned long get_phys(unsigned long virtp)
+{
+	pgd_t *pgd;
+	pud_t *pud;
+	pmd_t *pmd;
+	pte_t *pte;
+	struct mm_struct *mm = &init_mm;
+
+	/* built-in case */
+	if (virtp >= PAGE_OFFSET)
+		return (__pa(virtp));
+
+	/* kernel module case */
+	pgd = pgd_offset(mm, virtp);
+	if (!(pgd_none(*pgd) || pgd_bad(*pgd))) {
+		/* XXX: need to check if pud is valid */
+		pud = pud_offset(pgd, virtp);
+		pmd = pmd_offset(pud, virtp);
+		if (!(pmd_none(*pmd) || pmd_bad(*pmd))) {
+			pte = pte_offset_kernel(pmd, virtp);
+			if (pte_present(*pte)) {
+				return __pa(page_address(pte_page(*pte)) +
+					(virtp & ~PAGE_MASK));
+			}
+		}
+	}
+
+	return 0;
+}
+
 static int32_t sm_log_event_init (void)
 {
+#ifdef CONFIG_MSM_AMSS_ENHANCE_DEBUG
+	nzi_buf_item_type input;
+#endif
+
 	sm_events.event_pool = (sm_event_item_t *)kmalloc(sizeof(sm_event_item_t)*SM_MAXIMUM_EVENT, GFP_KERNEL);
 	if (sm_events.event_pool == NULL) {
 		printk ("%s: ERROR, can't malloc %d size of data\n",
 			__func__, sizeof(sm_event_item_t)*SM_MAXIMUM_EVENT);
 		return -ENOMEM;
 	}
+#ifdef CONFIG_MSM_AMSS_ENHANCE_DEBUG
+	input.extension.len = 1;
+	input.extension.data[0] = (uint32_t)get_phys((unsigned long)&sm_events.write_pos);
+	input.address = (uint32_t)__virt_to_phys((unsigned long)sm_events.event_pool);
+	input.size = sizeof(sm_event_item_t) * SM_MAXIMUM_EVENT;
+	strncpy(input.file_name, "smevent",
+			NZI_ITEM_FILE_NAME_LENGTH);
+	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
+	send_modem_logaddr(&input);
+
+	input.extension.len = 1;
+	input.extension.data[0] = (uint32_t)__virt_to_phys((unsigned long)&g_track_index);
+	input.address = (uint32_t)__virt_to_phys((unsigned long)g_track_irq_buf);
+	input.size = sizeof(struct traceirq_entry) * TRACK_BUF_SIZE;
+	strncpy(input.file_name, "irqX",
+			NZI_ITEM_FILE_NAME_LENGTH);
+	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
+	send_modem_logaddr(&input);
+#endif
 
 	init_waitqueue_head(&(sm_events.wait_wakeone_q));
 	init_waitqueue_head(&(sm_events.wait_wakeall_q));

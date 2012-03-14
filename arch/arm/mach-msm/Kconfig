@@ -1242,6 +1242,13 @@ config MSM_SMD
 	  used to communicate with various services on the baseband
 	  processor.
 
+config MSM_AMSS_ENHANCE_DEBUG
+	bool "MSM AMSS enhance debug"
+	help
+	  Using RPC to tell the modem processer the some log addresses
+	  in order that the modem will dump some logs in ap when ap
+	  crashes.
+
 choice
 	prompt "MSM Shared memory interface version"
 	depends on MSM_SMD

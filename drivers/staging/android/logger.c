@@ -27,6 +27,7 @@
 #include <linux/time.h>
 #include "logger.h"
 
+#include <mach/oem_rapi_client.h>
 #include <asm/ioctls.h>
 
 /*
@@ -749,6 +750,9 @@ static struct logger_log *get_log_from_minor(int minor)
 static int __init init_log(struct logger_log *log)
 {
 	int ret;
+#ifdef CONFIG_MSM_AMSS_ENHANCE_DEBUG
+	nzi_buf_item_type input;
+#endif
 
 	ret = misc_register(&log->misc);
 	if (unlikely(ret)) {

@@ -22,6 +22,8 @@ endif
 	endif
 endif
 
+obj-$(CONFIG_MSM_AMSS_ENHANCE_DEBUG) += enhance-debug.o
+
 obj-y += acpuclock.o
 obj-$(CONFIG_ARCH_MSM_KRAIT) += acpuclock-krait.o
 obj-$(CONFIG_ARCH_MSM7X27) += acpuclock-7627.o clock-pll.o
