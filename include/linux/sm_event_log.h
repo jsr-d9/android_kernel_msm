@@ -117,8 +117,10 @@ typedef enum {
 struct traceirq_entry {
 	unsigned long		ip;
 	unsigned int		flags;
+	unsigned long		caller;
+	unsigned int		cpuid;
 	unsigned long long 	cycles;
-	unsigned int		reserved[4];
+	unsigned int		reserved[2];
 };
 #define TRACK_BUF_SIZE	(PAGE_SIZE << 2)
 extern struct traceirq_entry *g_track_irq_buf;

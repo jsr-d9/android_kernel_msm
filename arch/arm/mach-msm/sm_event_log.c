@@ -469,7 +469,7 @@ static void sm_report_periodical_status (void)
 		0, (void *)&sm_periodcal_status, sizeof(sm_periodical_status_data_t));
 }
 
-static __always_inline void log_irq_info(unsigned long ip,  unsigned int flags)
+static __always_inline void log_irq_info(unsigned long ip,  unsigned int flags, unsigned long caller)
 {
 	unsigned int irq_idx;
 
@@ -482,6 +482,10 @@ static __always_inline void log_irq_info(unsigned long ip,  unsigned int flags)
 #endif
 	g_track_irq_buf[irq_idx].ip = ip;
 	g_track_irq_buf[irq_idx].flags = flags;
+	g_track_irq_buf[irq_idx].caller = caller;
+#ifdef CONFIG_SMP
+	g_track_irq_buf[irq_idx].cpuid = smp_processor_id();
+#endif
 	/*
 	 * g_track_irq_buf[irq_idx].cycles = 0;
 	 */
@@ -500,7 +504,10 @@ static int32_t sm_add_log_event(uint32_t event_id, uint32_t param1, int param2, 
 
 	/* for performace reason, irqs on/off occurs more frequently */
 	if (likely(event_id & SM_IRQ_ONOFF_EVENT)) {
-		log_irq_info(param1, param2);
+		/* no need to check if data is NULL since it
+		 * is called by track_hardirqs_on/off
+		 */
+		log_irq_info(param1, param2, ((unsigned long*)data)[0]);
 		return 0;
 	}
 

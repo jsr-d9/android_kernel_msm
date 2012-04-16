@@ -30,25 +30,29 @@ typedef enum {
 #define track_hardirqs_on(ops)				\
 	do {						\
 		unsigned long ip;			\
+		unsigned long caller;			\
 		__asm__ __volatile__ (			\
-			"mov %0, pc"			\
-			: "=r" (ip)			\
+			"mov %0, pc\n"			\
+			"mov %1, lr\n"			\
+			: "=r" (ip), "=r" (caller)	\
 			: : "cc" );			\
 		sm_add_event(SM_IRQ_ONOFF_EVENT,	\
 			ip, (ops) |TRACK_IRQSTATUS_ON,	\
-			NULL, 0);			\
+			&caller, sizeof(caller));	\
 	} while (0)
 
 #define track_hardirqs_off(ops)				\
 	do {						\
 		unsigned long ip;			\
+		unsigned long caller;			\
 		__asm__ __volatile__ (			\
-			"mov %0, pc"			\
-			: "=r" (ip)			\
+			"mov %0, pc\n"			\
+			"mov %1, lr\n"			\
+			: "=r" (ip), "=r" (caller)	\
 			: : "cc" );			\
 		sm_add_event(SM_IRQ_ONOFF_EVENT,	\
 			ip, (ops) |TRACK_IRQSTATUS_OFF,	\
-			NULL, 0);			\
+			&caller, sizeof(caller));	\
 	} while (0)
 #else
 # define track_hardirqs_on(ops)            do { } while (0)
