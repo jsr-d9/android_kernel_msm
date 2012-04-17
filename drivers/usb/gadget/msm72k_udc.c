@@ -147,7 +147,7 @@ static void usb_do_remote_wakeup(struct work_struct *w);
 #define USB_FLAG_SUSPEND        0x0010
 #define USB_FLAG_CONFIGURED     0x0020
 
-#define USB_CHG_DET_DELAY	msecs_to_jiffies(1000)
+#define USB_CHG_DET_DELAY	msecs_to_jiffies(100)
 #define REMOTE_WAKEUP_DELAY	msecs_to_jiffies(1000)
 #define PHY_STATUS_CHECK_DELAY	(jiffies + msecs_to_jiffies(1000))
 #define EPT_PRIME_CHECK_DELAY	(jiffies + msecs_to_jiffies(1000))
