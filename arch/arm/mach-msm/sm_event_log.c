@@ -450,10 +450,15 @@ static void sm_update_read_pos (sm_event_item_t *ev)
 
 static inline void sm_get_ktime (uint32_t *sec, uint32_t *nanosec)
 {
-	int this_cpu = smp_processor_id();
+	int this_cpu;
+	unsigned long flags;
 	unsigned long long t;
 
+	raw_local_irq_save(flags);
+	this_cpu = smp_processor_id();
 	t = cpu_clock(this_cpu);
+	raw_local_irq_restore(flags);
+
 	*nanosec = do_div(t, 1000000000);
 	*sec= (unsigned long)t;
 }
