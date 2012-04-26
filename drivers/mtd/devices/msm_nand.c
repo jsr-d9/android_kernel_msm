@@ -746,7 +746,8 @@ uint32_t flash_onfi_probe(struct msm_nand_chip *chip)
 				supported_flash.density  =
 					onfi_param_page_ptr->
 					number_of_blocks_per_logical_unit
-					* supported_flash.blksize;
+					* supported_flash.blksize
+					* onfi_param_page_ptr-> number_of_logical_units;
 				supported_flash.ecc_correctability =
 					onfi_param_page_ptr->
 					number_of_bits_ecc_correctability;
