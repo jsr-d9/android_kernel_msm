@@ -450,7 +450,7 @@ static void usb_chg_detect_non_standard_wall_charger(struct work_struct *w)
 	temp = atomic_read(&otg->chg_type);
 	spin_unlock_irqrestore(&ui->lock, flags);
 	pr_debug("read curr charger type: %d\n", temp);
-	// Set type as non-standard wall-charger if the type couldn't be determined
+	// Set type as unknown charger type if the type couldn't be determined
 	// at the time was delayed 5s after pull-up D+
 	if(temp != USB_CHG_TYPE__WALLCHARGER &&
 		temp != USB_CHG_TYPE__SDP) {

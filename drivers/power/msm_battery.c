@@ -82,6 +82,7 @@ struct msm_battery_info {
 	struct power_supply *msm_psy_ac;
 	struct power_supply *msm_psy_usb;
 	struct power_supply *msm_psy_battery;
+	struct power_supply *msm_psy_unknown;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend early_suspend;
@@ -155,13 +156,21 @@ static int msm_charger_psy_get_property(struct power_supply *psy,
 {
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
-		if (psy->type == POWER_SUPPLY_TYPE_MAINS) {
+		switch(psy->type) {
+		case POWER_SUPPLY_TYPE_MAINS:
 			val->intval = msm_battery_info.current_charger_src & AC_CHG
 				? 1 : 0;
-		}
-		if (psy->type == POWER_SUPPLY_TYPE_USB) {
+			break;
+		case POWER_SUPPLY_TYPE_USB:
 			val->intval = msm_battery_info.current_charger_src & USB_CHG
 				? 1 : 0;
+			break;
+		case POWER_SUPPLY_TYPE_UNKNOWN:
+			val->intval = msm_battery_info.current_charger_src & UNKNOWN_CHG
+				? 1 : 0;
+			break;
+		default:
+			return -EINVAL;
 		}
 		break;
 	default:
@@ -174,6 +183,16 @@ static int msm_charger_psy_get_property(struct power_supply *psy,
 static struct power_supply msm_psy_ac = {
 	.name = "ac",
 	.type = POWER_SUPPLY_TYPE_MAINS,
+	.supplied_to = msm_charger_supplied_to,
+	.num_supplicants = ARRAY_SIZE(msm_charger_supplied_to),
+	.properties = msm_charger_psy_properties,
+	.num_properties = ARRAY_SIZE(msm_charger_psy_properties),
+	.get_property = msm_charger_psy_get_property,
+};
+
+static struct power_supply msm_psy_unknown = {
+	.name = "unknown",
+	.type = POWER_SUPPLY_TYPE_UNKNOWN,
 	.supplied_to = msm_charger_supplied_to,
 	.num_supplicants = ARRAY_SIZE(msm_charger_supplied_to),
 	.properties = msm_charger_psy_properties,
@@ -313,6 +332,36 @@ static int msm_battery_get_charger_status(void)
 	return 0;
 }
 
+static void update_charger_type(u32 charger_hardware)
+{
+	switch(charger_hardware) {
+	case CHARGER_TYPE_USB_PC:
+		pr_debug("BATT: usb pc charger inserted\n");
+
+		msm_battery_info.current_psy = &msm_psy_usb;
+		msm_battery_info.current_charger_src = USB_CHG;
+		break;
+	case CHARGER_TYPE_USB_WALL:
+		pr_debug("BATT: usb wall changer inserted\n");
+
+		msm_battery_info.current_psy = &msm_psy_ac;
+		msm_battery_info.current_charger_src = AC_CHG;
+		break;
+	case CHARGER_TYPE_USB_UNKNOWN:
+		pr_debug("BATT: unknown changer inserted\n");
+
+		msm_battery_info.current_psy = &msm_psy_unknown;
+		msm_battery_info.current_charger_src = UNKNOWN_CHG;
+		break;
+	default:
+		pr_debug("BATT: CAUTION: charger hardware\n");
+
+		msm_battery_info.current_psy = &msm_psy_unknown;
+		msm_battery_info.current_charger_src = UNKNOWN_CHG;
+		break;
+	}
+}
+
 void msm_battery_update_psy_status(void)
 {
 	u32 charger_status;
@@ -394,28 +443,7 @@ void msm_battery_update_psy_status(void)
 	if (msm_battery_info.charger_status != charger_status) {
 		if (msm_battery_info.charger_status == CHARGER_STATUS_NULL) {
 			pr_debug("BATT: start charging\n");
-
-			if (charger_hardware == CHARGER_TYPE_USB_PC) {
-				pr_debug("BATT: usb pc charger inserted\n");
-
-				msm_battery_info.current_psy = &msm_psy_usb;
-				msm_battery_info.current_charger_src = USB_CHG;
-			} else if (charger_hardware == CHARGER_TYPE_USB_WALL) {
-				pr_debug("BATT: usb wall changer inserted\n");
-
-				msm_battery_info.current_psy = &msm_psy_ac;
-				msm_battery_info.current_charger_src = AC_CHG;
-			} else if (charger_hardware == CHARGER_TYPE_USB_UNKNOWN) {
-				pr_debug("BATT: unknown changer inserted\n");
-
-				msm_battery_info.current_psy = &msm_psy_ac;
-				msm_battery_info.current_charger_src = AC_CHG;
-			} else {
-				pr_debug("BATT: CAUTION: charger hardware\n");
-
-				msm_battery_info.current_psy = &msm_psy_ac;
-				msm_battery_info.current_charger_src = AC_CHG;
-			}
+			update_charger_type(charger_hardware);
 		} else if (charger_status == CHARGER_STATUS_NULL) {
 			pr_debug("BATT: end charging\n");
 
@@ -423,6 +451,8 @@ void msm_battery_update_psy_status(void)
 				pr_debug("BATT: usb pc charger removed\n");
 			} else if (msm_battery_info.current_charger_src & AC_CHG) {
 				pr_debug("BATT: usb wall charger removed\n");
+			} else if (msm_battery_info.current_charger_src & UNKNOWN_CHG) {
+				pr_debug("BATT: unknown wall charger removed\n");
 			} else {
 				pr_debug("BATT: CAUTION: charger invalid: %d\n",
 					  msm_battery_info.current_charger_src);
@@ -433,6 +463,12 @@ void msm_battery_update_psy_status(void)
 		} else {
 			pr_err("BATT: CAUTION: charger status change\n");
 		}
+	}
+
+	if ((charger_status != CHARGER_STATUS_NULL) &&
+		(charger_hardware != msm_battery_info.charger_hardware)) {
+		pr_debug("BATT: charger type changed\n");
+		update_charger_type(charger_hardware);
 	}
 
 	if (charger_status == CHARGER_STATUS_NULL) {
@@ -737,6 +773,8 @@ static int msm_battery_cleanup(void)
 		power_supply_unregister(msm_battery_info.msm_psy_ac);
 	if (msm_battery_info.msm_psy_usb)
 		power_supply_unregister(msm_battery_info.msm_psy_usb);
+	if (msm_battery_info.msm_psy_unknown)
+		power_supply_unregister(msm_battery_info.msm_psy_unknown);
 	if (msm_battery_info.msm_psy_battery)
 		power_supply_unregister(msm_battery_info.msm_psy_battery);
 
@@ -915,6 +953,18 @@ static int __devinit msm_battery_probe(struct platform_device *pdev)
 		msm_battery_info.msm_psy_ac = &msm_psy_ac;
 	}
 
+	if (pdata->avail_chg_sources & UNKNOWN_CHG) {
+		rc = power_supply_register(&pdev->dev, &msm_psy_unknown);
+		if (rc < 0) {
+			dev_err(&pdev->dev,
+				"BATT: ERROR: %s, register msm_psy_unknown, "
+				"rc = %d\n", __func__, rc);
+			msm_battery_cleanup();
+			return rc;
+		}
+		msm_battery_info.available_charger_src |= UNKNOWN_CHG;
+		msm_battery_info.msm_psy_unknown = &msm_psy_unknown;
+	}
 	if (pdata->avail_chg_sources & USB_CHG) {
 		rc = power_supply_register(&pdev->dev, &msm_psy_usb);
 		if (rc < 0) {
