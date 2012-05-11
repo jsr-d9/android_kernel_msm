@@ -2167,6 +2167,10 @@ config MSM_SM_EVENT_LOG
 	bool "Enable system event log"
 	default n
 
+config MSM_SLEEP_MONITOR
+	tristate "Enable sleep monitor"
+	default n
+
 config MSM_STANDALONE_POWER_COLLAPSE
        bool "Enable standalone power collapse"
        default n
