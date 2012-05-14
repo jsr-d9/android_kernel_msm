@@ -614,7 +614,7 @@ static int32_t sm_log_event_init (void)
 	input.extension.data[0] = (uint32_t)__virt_to_phys((unsigned long)&g_track_index);
 	input.address = (uint32_t)__virt_to_phys((unsigned long)g_track_irq_buf);
 	input.size = sizeof(struct traceirq_entry) * TRACK_BUF_SIZE;
-	strncpy(input.file_name, "irqX",
+	strncpy(input.file_name, "irqx",
 			NZI_ITEM_FILE_NAME_LENGTH);
 	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
 	send_modem_logaddr(&input);
