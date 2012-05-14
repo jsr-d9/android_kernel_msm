@@ -701,7 +701,7 @@ static ssize_t apds990x_store_enable_ps_sensor(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(enable_ps_sensor, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(enable_ps_sensor, S_IWUSR | S_IWGRP | S_IRUGO,
 				   apds990x_show_enable_ps_sensor, apds990x_store_enable_ps_sensor);
 
 static ssize_t apds990x_show_enable_als_sensor(struct device *dev,
@@ -798,7 +798,7 @@ static ssize_t apds990x_store_enable_als_sensor(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(enable_als_sensor, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(enable_als_sensor, S_IWUSR | S_IWGRP | S_IRUGO,
 				   apds990x_show_enable_als_sensor, apds990x_store_enable_als_sensor);
 
 static ssize_t apds990x_show_als_poll_delay(struct device *dev,
@@ -856,7 +856,7 @@ static ssize_t apds990x_store_als_poll_delay(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(als_poll_delay, S_IWUSR | S_IRUGO,
+static DEVICE_ATTR(als_poll_delay, S_IWUSR | S_IWGRP | S_IRUGO,
 				   apds990x_show_als_poll_delay, apds990x_store_als_poll_delay);
 
 static struct attribute *apds990x_attributes[] = {
