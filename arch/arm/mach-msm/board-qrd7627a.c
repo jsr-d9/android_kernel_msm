@@ -1006,6 +1006,22 @@ static void __init qrd7627a_init_early(void)
 	msm_msm7627a_allocate_memory_regions();
 }
 
+#ifdef CONFIG_MSM_AMSS_ENHANCE_DEBUG
+static int __init qrd7627a_logbuf_init(void)
+{
+	nzi_buf_item_type input;
+	extern char __log_buf[];
+
+	input.extension.len = 0;
+	input.address = (uint32_t)__virt_to_phys((unsigned long)__log_buf);
+	input.size = (1 << CONFIG_LOG_BUF_SHIFT);
+	strncpy(input.file_name, "dmesg", NZI_ITEM_FILE_NAME_LENGTH);
+	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
+	return send_modem_logaddr(&input);
+}
+late_initcall(qrd7627a_logbuf_init);
+#endif
+
 MACHINE_START(MSM7627A_QRD1, "QRD MSM7627a QRD1")
 	.atag_offset	= 0x100,
 	.map_io		= msm_common_io_init,

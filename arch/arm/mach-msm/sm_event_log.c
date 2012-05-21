@@ -568,6 +568,25 @@ static int32_t sm_log_event_init (void)
 			__func__, sizeof(sm_event_item_t)*SM_MAXIMUM_EVENT);
 		return -ENOMEM;
 	}
+#ifdef CONFIG_MSM_AMSS_ENHANCE_DEBUG
+	input.extension.len = 1;
+	input.extension.data[0] = (uint32_t)get_phys((unsigned long)&sm_events.write_pos);
+	input.address = (uint32_t)__virt_to_phys((unsigned long)sm_events.event_pool);
+	input.size = sizeof(sm_event_item_t) * SM_MAXIMUM_EVENT;
+	strncpy(input.file_name, "smevent",
+			NZI_ITEM_FILE_NAME_LENGTH);
+	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
+	send_modem_logaddr(&input);
+
+	input.extension.len = 1;
+	input.extension.data[0] = (uint32_t)__virt_to_phys((unsigned long)&g_track_index);
+	input.address = (uint32_t)__virt_to_phys((unsigned long)g_track_irq_buf);
+	input.size = sizeof(struct traceirq_entry) * TRACK_BUF_SIZE;
+	strncpy(input.file_name, "irqx",
+			NZI_ITEM_FILE_NAME_LENGTH);
+	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
+	send_modem_logaddr(&input);
+#endif
 
 	init_waitqueue_head(&(sm_events.wait_wakeone_q));
 	init_waitqueue_head(&(sm_events.wait_wakeall_q));

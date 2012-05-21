@@ -140,7 +140,7 @@ void panic(const char *fmt, ...)
 	flush_log_buf(NULL);
 #endif
 #ifdef CONFIG_OUTER_CACHE
-	paddr = (unsigned long)__virt_to_phys(__log_buf);
+	paddr = (unsigned long)__virt_to_phys((unsigned long)__log_buf);
 	outer_clean_range(paddr, paddr + __LOG_BUF_LEN);
 #endif
 #endif
@@ -474,7 +474,7 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
 	 */
 	flush_log_buf(NULL);
 #ifdef CONFIG_OUTER_CACHE
-	paddr = (unsigned long)__virt_to_phys(__log_buf);
+	paddr = (unsigned long)__virt_to_phys((unsigned long)__log_buf);
 	outer_clean_range(paddr, paddr + __LOG_BUF_LEN);
 #endif
 #endif

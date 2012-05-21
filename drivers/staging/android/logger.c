@@ -757,6 +757,15 @@ static int __init init_log(struct logger_log *log)
 		return ret;
 	}
 
+#ifdef CONFIG_MSM_AMSS_ENHANCE_DEBUG
+	/* for MP compact debuging */
+	input.extension.len = 0;
+	input.address = (uint32_t)__virt_to_phys((unsigned long)log->buffer);
+	input.size = 256*1024;
+	strncpy(input.file_name, log->misc.name, NZI_ITEM_FILE_NAME_LENGTH);
+	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
+	send_modem_logaddr(&input);
+#endif
 	printk(KERN_INFO "logger: created %luK log '%s'\n",
 	       (unsigned long) log->size >> 10, log->misc.name);
 
