@@ -473,6 +473,11 @@ static u32 msm_calculate_batt_capacity(u32 current_voltage)
 			/ (high_voltage - low_voltage);
 }
 
+static struct platform_device msm_fastboot_device = {
+	.name               = "fastboot",
+	.id                 = -1,
+};
+
 static struct platform_device msm_batt_device = {
 	.name               = "msm-battery",
 	.id                 = -1,
@@ -580,6 +585,7 @@ static struct platform_device *common_devices[] __initdata = {
 #ifdef CONFIG_ION_MSM
 	&ion_dev,
 #endif
+	&msm_fastboot_device,
 };
 
 
