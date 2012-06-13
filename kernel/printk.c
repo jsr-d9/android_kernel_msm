@@ -42,6 +42,8 @@
 #include <linux/notifier.h>
 #include <linux/rculist.h>
 
+#include <linux/rtc.h>
+#include <mach/msm_rtb.h>
 #include <asm/uaccess.h>
 
 #include <mach/msm_rtb.h>
@@ -758,6 +760,13 @@ module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
 static bool always_kmsg_dump;
 module_param_named(always_kmsg_dump, always_kmsg_dump, bool, S_IRUGO | S_IWUSR);
 
+#if defined(CONFIG_PRINTK_RTC_TIME)
+bool printk_rtc = 1;
+#else
+bool printk_rtc = 0;
+#endif
+module_param_named(rtc_time, printk_rtc, bool, S_IRUGO | S_IWUSR);
+
 /* Check if we have any console registered that can be called early in boot. */
 static int have_callable_console(void)
 {
@@ -999,6 +1008,26 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 					emit_log_char(*tp);
 				printed_len += tlen;
 			}
+
+			if (printk_rtc) {
+				/* add the rtc time stamp */
+				char tbuf[100], *tp;
+				unsigned tlen;
+				struct timespec ts;
+				struct rtc_time tm;
+
+				getnstimeofday_nolock(&ts);
+
+				rtc_time_to_tm(ts.tv_sec, &tm);
+				tlen = sprintf(tbuf, "[(%d-%02d-%02d %02d:%02d:%02d.%09lu UTC)] ",
+						tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+						tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
+
+				for (tp = tbuf; tp < tbuf + tlen; tp++)
+					emit_log_char(*tp);
+				printed_len += tlen;
+			}
+
 
 			if (!*p)
 				break;

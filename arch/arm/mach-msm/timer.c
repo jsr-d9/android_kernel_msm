@@ -231,9 +231,14 @@ static uint32_t msm_read_timer_count(struct msm_clock *clock, int global)
 		if ((t2 >= t1) && (t3 >= t2))
 			return t2;
 		if (++loop_count == 5) {
-			pr_err("msm_read_timer_count timer %s did not "
-			       "stabilize: %u -> %u -> %u\n",
-			       clock->clockevent.name, t1, t2, t3);
+			/* FIXME: this "printk_rtc" has the race condition in SMP case */
+			/*
+			extern bool printk_rtc;
+			if (!printk_rtc)
+				pr_err("msm_read_timer_count timer %s did not "
+				       "stabilize: %u -> %u -> %u\n",
+				       clock->clockevent.name, t1, t2, t3);
+			*/
 			return t3;
 		}
 	}
