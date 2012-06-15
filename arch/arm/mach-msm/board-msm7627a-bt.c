@@ -657,6 +657,10 @@ static int bluetooth_switch_regulators(int on)
 			goto reg_disable;
 		}
 
+		dev_info(&msm_bt_power_device.dev,
+				"%s: regulator_get_voltage of %s is %d\n",
+				__func__, bt_vregs[i].name, regulator_get_voltage(bt_vregs[i].reg));
+
 		if (bt_vregs[i].is_pin_controlled) {
 			rc = pmapp_vreg_lpm_pincntrl_vote(id,
 				bt_vregs[i].pmapp_id,
@@ -1001,6 +1005,15 @@ void __init msm7627a_bt_power_init(void)
 			dev_err(dev, "%s: could not get regulator %s: %d\n",
 					__func__, bt_vregs[i].name, rc);
 			goto reg_get_fail;
+		}
+		if(!strcmp(bt_vregs[i].name, "bt")
+			&& ( machine_is_msm7627a_evb()
+				|| machine_is_msm8625_evb()
+				|| machine_is_msm8625_qrd5()
+				|| machine_is_msm8625_qrd7())) {
+			bt_vregs[i].min_level = 3300000;
+			dev_info(dev, "%s: set regulator %s min level to %d\n",
+					__func__, bt_vregs[i].name, bt_vregs[i].min_level);
 		}
 	}
 
