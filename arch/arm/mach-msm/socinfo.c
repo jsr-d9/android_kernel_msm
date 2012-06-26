@@ -21,6 +21,7 @@
 #include <mach/socinfo.h>
 
 #include "smd_private.h"
+#include <mach/proc_comm.h>
 
 #define BUILD_ID_LENGTH 32
 
@@ -50,6 +51,17 @@ const char *hw_platform[] = {
 	[HW_PLATFORM_DRAGON] = "Dragon"
 };
 
+enum {
+	MULTI_NO_DSDS = 0,
+	MULTI = 1,
+	UMTS = 2
+};
+
+const char *modem_type[] = {
+	[MULTI_NO_DSDS] = "MULTI_NO_DSDS",
+	[MULTI] = "MULTI",
+	[UMTS] = "UMTS"
+};
 enum {
 	ACCESSORY_CHIP_UNKNOWN = 0,
 	ACCESSORY_CHIP_CHARM = 58,
@@ -406,6 +418,26 @@ socinfo_show_version(struct sys_device *dev,
 }
 
 static ssize_t
+socinfo_show_modem_type(struct sys_device *dev,
+		      struct sysdev_attribute *attr,
+		      char *buf)
+{
+	uint32_t version;
+	int ret;
+
+	if (!socinfo) {
+		pr_err("%s: No socinfo found!\n", __func__);
+		return 0;
+	}
+
+	ret = msm_proc_comm(PCOM_GET_MODEM_VERSION, &version, NULL);
+	if ((ret >= 0) && (version <= UMTS))
+		return snprintf(buf, PAGE_SIZE, "%s\n", modem_type[version]);
+	else
+		return 0;
+}
+
+static ssize_t
 socinfo_show_build_id(struct sys_device *dev,
 		      struct sysdev_attribute *attr,
 		      char *buf)
@@ -580,6 +612,7 @@ static struct sysdev_attribute socinfo_v1_files[] = {
 	_SYSDEV_ATTR(id, 0444, socinfo_show_id, NULL),
 	_SYSDEV_ATTR(version, 0444, socinfo_show_version, NULL),
 	_SYSDEV_ATTR(build_id, 0444, socinfo_show_build_id, NULL),
+	_SYSDEV_ATTR(modem_type, 0444, socinfo_show_modem_type, NULL),
 };
 
 static struct sysdev_attribute socinfo_v2_files[] = {
