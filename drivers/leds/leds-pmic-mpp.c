@@ -25,8 +25,9 @@
 
 struct pmic_mpp_led_data {
 	struct led_classdev cdev;
-	int curr;
-	int mpp;
+	int which;
+	int type;
+	int max;
 };
 
 static void pm_mpp_led_set(struct led_classdev *led_cdev,
@@ -42,16 +43,26 @@ static void pm_mpp_led_set(struct led_classdev *led_cdev,
 		return;
 	}
 
-	ret = pmic_secure_mpp_config_i_sink(led->mpp, led->curr,
-			value ? PM_MPP__I_SINK__SWITCH_ENA :
-				PM_MPP__I_SINK__SWITCH_DIS);
+	if(value > led->max) {
+		value = led->max;
+	}
+
+	if(PMIC8029_DRV_TYPE_CUR == led->type) {
+		ret = pmic_secure_mpp_config_i_sink(led->which, value,
+				value ? PM_MPP__I_SINK__SWITCH_ENA :
+					PM_MPP__I_SINK__SWITCH_DIS);
+	} else {
+		ret = pmic_secure_mpp_control_digital_output(led->which,
+			value,
+			value ? PM_MPP__DLOGIC_OUT__CTRL_HIGH : PM_MPP__DLOGIC_OUT__CTRL_LOW);
+	}
 	if (ret)
 		dev_err(led_cdev->dev, "can't set mpp led\n");
 }
 
 static int pmic_mpp_led_probe(struct platform_device *pdev)
 {
-	const struct led_platform_data *pdata = pdev->dev.platform_data;
+	const struct pmic8029_leds_platform_data *pdata = pdev->dev.platform_data;
 	struct pmic_mpp_led_data *led, *tmp_led;
 	int i, rc;
 
@@ -74,11 +85,17 @@ static int pmic_mpp_led_probe(struct platform_device *pdev)
 		tmp_led->cdev.brightness_set = pm_mpp_led_set;
 		tmp_led->cdev.brightness = LED_OFF;
 		tmp_led->cdev.max_brightness = LED_FULL;
-		tmp_led->mpp = LED_MPP(pdata->leds[i].flags);
-		tmp_led->curr = LED_CURR(pdata->leds[i].flags);
+		tmp_led->which = pdata->leds[i].which;
+		tmp_led->type = pdata->leds[i].type;
+		if(PMIC8029_DRV_TYPE_CUR == tmp_led->type) {
+			tmp_led->max = pdata->leds[i].max.cur;
+		} else {
+			tmp_led->max = pdata->leds[i].max.vol;
+		}
 
-		if (tmp_led->curr < PM_MPP__I_SINK__LEVEL_5mA ||
-			tmp_led->curr > PM_MPP__I_SINK__LEVEL_40mA) {
+		if (PMIC8029_DRV_TYPE_CUR == tmp_led->type &&
+			(tmp_led->max < PM_MPP__I_SINK__LEVEL_5mA ||
+			tmp_led->max > PM_MPP__I_SINK__LEVEL_40mA)) {
 			dev_err(&pdev->dev, "invalid current\n");
 			goto unreg_led_cdev;
 		}
@@ -103,7 +120,7 @@ unreg_led_cdev:
 
 static int __devexit pmic_mpp_led_remove(struct platform_device *pdev)
 {
-	const struct led_platform_data *pdata = pdev->dev.platform_data;
+	const struct pmic8029_leds_platform_data *pdata = pdev->dev.platform_data;
 	struct pmic_mpp_led_data *led = platform_get_drvdata(pdev);
 	int i;
 

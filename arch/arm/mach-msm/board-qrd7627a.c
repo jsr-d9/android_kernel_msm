@@ -24,7 +24,7 @@
 #include <linux/bootmem.h>
 #include <linux/mfd/marimba.h>
 #include <linux/power_supply.h>
-#include <linux/leds-pmic8029.h>
+//#include <linux/leds-pmic8029.h>
 #include <linux/input/rmi_platformdata.h>
 #include <linux/input/rmi_i2c.h>
 #include <linux/i2c/atmel_mxt_ts.h>
@@ -607,18 +607,6 @@ static struct platform_device *qrd3_devices[] __initdata = {
 	&msm_device_nand,
 };
 
-static struct pmic8029_leds_platform_data msm8625_pmic8029_leds_data = {
-	.which		= PM_MPP_7,
-	.type		= PMIC8029_DRV_TYPE_CUR,
-	.max.cur	= PM_MPP__I_SINK__LEVEL_40mA,
-};
-
-static struct platform_device msm8625_device_pmic8029_leds = {
-	.name   = "keyboard-backlight",
-	.id = -1,
-	.dev.platform_data  = &msm8625_pmic8029_leds_data,
-};
-
 static struct platform_device *msm8625_evb_devices[] __initdata = {
 	&msm8625_device_dmov,
 	&msm8625_device_smd,
@@ -932,10 +920,6 @@ static void __init add_platform_devices(void)
 	if (machine_is_msm7627a_qrd3() || machine_is_msm7627a_evb())
 		platform_add_devices(qrd3_devices,
 				ARRAY_SIZE(qrd3_devices));
-/* for evb and SKU5 */
-	if (machine_is_msm8625_evb() || machine_is_msm8625_qrd5()){
-		platform_device_register(&msm8625_device_pmic8029_leds);
-	}
 	platform_add_devices(common_devices,
 			ARRAY_SIZE(common_devices));
 }

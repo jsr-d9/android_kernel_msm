@@ -783,13 +783,17 @@ static struct platform_device kp_pdev_qrd3 = {
 	},
 };
 
-static struct led_info ctp_backlight_info = {
-	.name           = "button-backlight",
-	.flags          = PM_MPP__I_SINK__LEVEL_10mA << 16 | PM_MPP_7,
+static struct pmic8029_led_platform_data leds_data[] = {
+	{
+		.name = "button-backlight",
+		.which = PM_MPP_7,
+		.type = PMIC8029_DRV_TYPE_CUR,
+		.max.cur = PM_MPP__I_SINK__LEVEL_40mA,
+	},
 };
 
-static struct led_platform_data ctp_backlight_pdata = {
-	.leds = &ctp_backlight_info,
+static struct pmic8029_leds_platform_data pmic8029_leds_pdata = {
+	.leds = leds_data,
 	.num_leds = 1,
 };
 
@@ -797,7 +801,7 @@ static struct platform_device pmic_mpp_leds_pdev = {
 	.name   = "pmic-mpp-leds",
 	.id     = -1,
 	.dev    = {
-		.platform_data  = &ctp_backlight_pdata,
+		.platform_data	= &pmic8029_leds_pdata,
 	},
 };
 
