@@ -32,7 +32,7 @@ enum sleep_monitor_state {
 };
 
 static struct msm_rpc_client *client = NULL;
-static enum sleep_monitor_state enable = SLEEP_MONITOR_DISABLE;
+static int control = SLEEP_MONITOR_DISABLE;
 
 static int call_oem_rapi_client_streaming_function(char *input)
 {
@@ -68,38 +68,36 @@ static int call_oem_rapi_client_streaming_function(char *input)
 	return ret;
 }
 
-ssize_t sleepm_show_enable(struct device *ddev,
+ssize_t sleepm_show_control(struct device *ddev,
 		struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%d\n", enable);
+	return snprintf(buf, PAGE_SIZE, "%d\n", control);
 }
-ssize_t sleepm_store_enable(struct device *ddev,
+ssize_t sleepm_store_control(struct device *ddev,
 		 struct device_attribute *attr, const char *buf, size_t count)
 {
 	int tmp;
 
 	sscanf(buf, "%d", &tmp);
+	control = tmp;
 	switch((enum sleep_monitor_state)tmp){
 		case SLEEP_MONITOR_DISABLE:
-			enable = SLEEP_MONITOR_DISABLE;
 			printk(KERN_INFO DEVICE_NAME ": Disable sleep monitor\n");
-
 			break;
 		case SLEEP_MONITOR_ENABLE:
-			enable = SLEEP_MONITOR_ENABLE;
 			printk(KERN_INFO DEVICE_NAME ": Enable sleep monitor\n");
 			break;
 		default:
-			printk(KERN_INFO DEVICE_NAME ": Command not supported\n");
-			return -EINVAL;
+			printk(KERN_INFO DEVICE_NAME ": Extend Command %d\n", tmp);
+			break;
 	}
 
-	call_oem_rapi_client_streaming_function((char*)&enable);
+	call_oem_rapi_client_streaming_function((char*)&control);
 
 	return count;
 }
 
-static DEVICE_ATTR(enable, S_IRUGO | S_IWUSR, sleepm_show_enable, sleepm_store_enable);
+static DEVICE_ATTR(control, S_IRUGO | S_IWUSR, sleepm_show_control, sleepm_store_control);
 
 static struct class *sleepm_class;
 static struct device *sleepm_device;
@@ -128,10 +126,10 @@ static int __init sleep_monitor_module_init(void)
 		goto device_create_fail;
 	}
 
-	ret = device_create_file(sleepm_device, &dev_attr_enable);
+	ret = device_create_file(sleepm_device, &dev_attr_control);
 	if (ret) {
 		pr_err("%s: device_create_file(%s)=%d\n",
-				__func__, dev_attr_enable.attr.name, ret);
+				__func__, dev_attr_control.attr.name, ret);
 		goto device_create_file_fail;
 	}
 
@@ -149,7 +147,7 @@ alloc_chrdev_region_fail:
 
 static void __exit sleep_monitor_module_exit(void)
 {
-	device_remove_file(sleepm_device, &dev_attr_enable);
+	device_remove_file(sleepm_device, &dev_attr_control);
 	device_destroy(sleepm_class, sleepm_devno);
 	class_destroy(sleepm_class);
 	unregister_chrdev_region(sleepm_devno, 1);
