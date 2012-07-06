@@ -26,6 +26,7 @@
  */
 
 /* -------------------------------------------------------------------------- */
+#define DEBUG
 
 #include <linux/i2c.h>
 #include <linux/module.h>
@@ -395,7 +396,7 @@ static int ak8975_mod_probe(struct i2c_client *client,
 	struct ak8975_mod_private_data *private_data;
 	int result = 0;
 
-	dev_info(&client->adapter->dev, "%s: %s\n", __func__, devid->name);
+	dev_info(&client->adapter->dev, "%s: %s,0x%x\n", __func__, devid->name,(unsigned int)client);
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		result = -ENODEV;

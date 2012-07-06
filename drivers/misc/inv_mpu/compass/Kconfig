@@ -35,6 +35,14 @@ config MPU_SENSORS_MMC314X
 	  device driver.  Only one compass can be registered at a time.
 	  Specifying more that one compass in the board file will result
 	  in runtime errors.
+config MPU_SENSORS_MMC328X
+	tristate "MEMSIC mmc328x"
+	help
+	  This enables support for the MEMSIC mmc314x compass
+	  This support is for integration with the MPU3050 or MPU6050 gyroscope
+	  device driver.  Only one compass can be registered at a time.
+	  Specifying more that one compass in the board file will result
+	  in runtime errors.
 
 config MPU_SENSORS_AMI30X
 	tristate "Aichi Steel ami30X"
