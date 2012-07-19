@@ -286,10 +286,6 @@ fastboot_suspend(struct device *dev)
 static int
 fastboot_resume(struct device *dev)
 {
-	struct fastboot_data *fb_data = dev_get_drvdata(dev);
-
-	fb_data->resume = 1;
-
 	return 0;
 }
 
