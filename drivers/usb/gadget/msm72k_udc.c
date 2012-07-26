@@ -1696,6 +1696,10 @@ static void usb_do_work(struct work_struct *w)
 				usb_phy_set_power(ui->xceiv, 0);
 
 				if (ui->irq) {
+					writel(readl(USB_USBSTS), USB_USBSTS);
+					writel(0, USB_USBINTR);
+					/* Ensure that above STOREs are completed before enabling interrupts */
+					smp_mb();
 					free_irq(ui->irq, ui);
 					ui->irq = 0;
 				}
