@@ -1390,7 +1390,7 @@ void __init msm_fb_add_devices(void)
 	msm_fb_register_device("mipi_dsi", &mipi_dsi_pdata);
 #endif
 	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-					|| machine_is_msm8625_evt()) {
+					|| machine_is_msm8625_qrd5()) {
 		gpio_reg_2p85v = regulator_get(&mipi_dsi_device.dev,
 								"lcd_vdd");
 		if (IS_ERR(gpio_reg_2p85v))

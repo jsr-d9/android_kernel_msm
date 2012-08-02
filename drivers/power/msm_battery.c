@@ -355,8 +355,8 @@ void msm_battery_update_psy_status(void)
 		charger_hardware	= reply_charger.charger_hardware;
 		hide			= reply_charger.hide;
 		battery_status		= reply_charger.battery_status;
-		battery_voltage		= reply_charger.battery_voltage;
-		battery_capacity	= reply_charger.battery_capacity;
+		battery_voltage		= reply_charger.battery_voltage & 0xFFFF;
+		battery_capacity	= reply_charger.battery_capacity & 0x7F;
 		battery_temp		= reply_charger.battery_temp * 10;
 		is_charging		= reply_charger.is_charging;
 		is_charging_complete	= reply_charger.is_charging_complete;
