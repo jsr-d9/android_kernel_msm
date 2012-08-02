@@ -80,13 +80,14 @@ struct fastboot_ctrl {
 
 struct fastboot_data {
 	unsigned long state;
-	unsigned long resume;
+	unsigned long enabled;
 	struct fastboot_ctrl fb_ctrl;
+	struct device *dev;
 	struct mutex lock;
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend early_suspend;
 #endif
-};
+} *global_data = NULL;
 
 static DEFINE_MUTEX(fastboot_mtx);
 
@@ -138,6 +139,22 @@ static int fastboot_send_rpc(char *input)
 	return ret;
 }
 
+int fastboot_enabled(void)
+{
+	return global_data && global_data->enabled;
+}
+EXPORT_SYMBOL(fastboot_enabled);
+
+void fastboot_usb_callback(void)
+{
+	char *envp[2] = {"FASTBOOT_MSG=usb", NULL};
+
+	if (global_data)
+		kobject_uevent_env(&global_data->dev->kobj, KOBJ_CHANGE, envp);
+}
+EXPORT_SYMBOL(fastboot_usb_callback);
+
+extern void msm_otg_turn_on_usb(int on);
 static ssize_t fastboot_start_store(struct device *dev,
 				  struct device_attribute *attr,
 				  const char *buf,
@@ -170,41 +187,8 @@ static ssize_t fastboot_start_store(struct device *dev,
 
 static DEVICE_ATTR(fastboot, 0664, fastboot_start_show, fastboot_start_store);
 
-static ssize_t fastboot_resume_show(struct device *dev,
-				 struct device_attribute *attr,
-				 char *buf)
-{
-	struct fastboot_data *fb_data = dev_get_drvdata(dev);
-
-	return snprintf(buf, PAGE_SIZE, "%lu\n",
-			fb_data->resume);
-}
-
-static ssize_t fastboot_resume_store(struct device *dev,
-				  struct device_attribute *attr,
-				  const char *buf,
-				  size_t n)
-{
-	unsigned long tmp;
-	struct fastboot_data *fb_data = dev_get_drvdata(dev);
-
-	if (!strict_strtoul(buf, 10, &tmp)) {
-		mutex_lock(&fb_data->lock);
-		fb_data->resume = tmp;
-		mutex_unlock(&fb_data->lock);
-		return n;
-	} else {
-		pr_err("%s: unable to convert: %s to an int\n", __func__,
-			buf);
-		return -EINVAL;
-	}
-}
-
-static DEVICE_ATTR(resume, 0664, fastboot_resume_show, fastboot_resume_store);
-
 static struct attribute *fastboot_sysfs_attrs[] = {
 	&dev_attr_fastboot.attr,
-	&dev_attr_resume.attr,
 	NULL
 };
 
@@ -216,16 +200,27 @@ static struct attribute_group fastboot_attribute_group = {
 static void fastboot_early_suspend(struct early_suspend *h)
 {
 	struct fastboot_data *fb_data = container_of(h, struct fastboot_data, early_suspend);
-	char rpc_arg = FAST_PWROFF_LCDOFF;
-	if (fb_data->state)
+	char rpc_arg;
+
+	if (fb_data->state) {
+		rpc_arg = FAST_PWROFF_LCDOFF;
 		fastboot_send_rpc(&rpc_arg);
+		usleep(10000);
+		fb_data->enabled = 1;
+		rpc_arg = FAST_PWROFF_OK;
+		fastboot_send_rpc(&rpc_arg);
+	}
 }
 
 static void fastboot_late_resume(struct early_suspend *h)
 {
 	struct fastboot_data *fb_data = container_of(h, struct fastboot_data, early_suspend);
+	char *envp[2] = {"FASTBOOT_MSG=resume", NULL};
 
-	fb_data->resume = 1;
+	if (fb_data->state) {
+		kobject_uevent_env(&fb_data->dev->kobj, KOBJ_CHANGE, envp);
+		fb_data->enabled = 0;
+	}
 }
 #endif
 
@@ -234,7 +229,7 @@ static int __devinit fastboot_probe(struct platform_device *pdev)
 	struct fastboot_data *fb_data = NULL;
 	int ret;
 
-	fb_data = kmalloc(sizeof(struct fastboot_data), GFP_KERNEL);
+	global_data = fb_data = kmalloc(sizeof(struct fastboot_data), GFP_KERNEL);
 	if (!fb_data) {
 		ret = -ENODEV;
 		goto fail_mem;
@@ -250,6 +245,8 @@ static int __devinit fastboot_probe(struct platform_device *pdev)
 	mutex_init(&fb_data->lock);
 	//clear this addr
 	fb_data->state = 0;
+	fb_data->enabled = 0;
+	fb_data->dev = &pdev->dev;
 	platform_set_drvdata(pdev, fb_data);
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -283,11 +280,6 @@ static int __devexit fastboot_remove(struct platform_device *pdev)
 static int
 fastboot_suspend(struct device *dev)
 {
-	struct fastboot_data *fb_data = dev_get_drvdata(dev);
-	char rpc_arg = FAST_PWROFF_OK;
-	if (fb_data->state)
-		fastboot_send_rpc(&rpc_arg);
-
 	return 0;
 }
 
