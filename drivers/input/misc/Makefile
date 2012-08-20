@@ -60,3 +60,6 @@ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
 obj-$(CONFIG_PMIC8058_OTHC)             += pmic8058-othc.o
 obj-$(CONFIG_INPUT_PMIC8058_VIBRA_MEMLESS) += pmic8058-vib-memless.o
 obj-$(CONFIG_BOSCH_BMA150)              += bma150.o
+obj-$(CONFIG_INPUT_LTR502) 		+= ltr502.o
+obj-$(CONFIG_BOSCH_BMA250)		+= bma250.o
+obj-$(CONFIG_AVAGO_APDS990X)            += apds990x.o
