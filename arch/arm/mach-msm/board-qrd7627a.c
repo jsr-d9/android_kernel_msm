@@ -61,6 +61,7 @@
 #include "pm-boot.h"
 #include "board-msm7x27a-regulator.h"
 #include "board-msm7627a.h"
+#include "board-msm7627a-sensor.h"
 
 #define PMEM_KERNEL_EBI1_SIZE	0x3A000
 #define MSM_PMEM_AUDIO_SIZE	0x1F4000
@@ -994,7 +995,7 @@ static void __init msm_qrd_init(void)
 #if defined(CONFIG_BT) && defined(CONFIG_MARIMBA_CORE)
 	msm7627a_bt_power_init();
 #endif
-
+	msm7627a_sensor_init();
 	msm7627a_camera_init();
 	qrd7627a_add_io_devices();
 	msm7x25a_kgsl_3d0_init();
