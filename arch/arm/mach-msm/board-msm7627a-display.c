@@ -511,7 +511,7 @@ static int msm_fb_detect_panel(const char *name)
 		if (!strncmp(name, "lcdc_truly_hvga_ips3p2335_pt", 28))
 			ret = 0;
 	} else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb() ||
-			machine_is_msm8625_qrd5()) {
+			machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
 		if (!strncmp(name, "mipi_cmd_nt35510_wvga", 21))
 			ret = 0;
 	}
@@ -690,7 +690,7 @@ static int evb_backlight_control(int level, int mode)
 static int mipi_NT35510_rotate_panel(void)
 {
 	int rotate = 0;
-	if (machine_is_msm8625_qrd5())
+	if (machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 		rotate = 1;
 
 	return rotate;
@@ -768,7 +768,7 @@ void __init msm_msm7627a_allocate_memory_regions(void)
 	if (machine_is_msm7625a_surf() || machine_is_msm7625a_ffa())
 		fb_size = MSM7x25A_MSM_FB_SIZE;
 	else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-						|| machine_is_msm8625_qrd5())
+						|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 		fb_size = MSM8x25_MSM_FB_SIZE;
 	else
 		fb_size = MSM_FB_SIZE;
@@ -989,7 +989,7 @@ static int msm_fb_dsi_client_reset(void)
 	if (machine_is_msm7627a_qrd1())
 		rc = msm_fb_dsi_client_qrd1_reset();
 	else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-						|| machine_is_msm8625_qrd5())
+						|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 		rc = msm_fb_dsi_client_qrd3_reset();
 	else
 		rc = msm_fb_dsi_client_msm_reset();
@@ -1298,7 +1298,7 @@ static int mipi_dsi_panel_power(int on)
 	if (machine_is_msm7627a_qrd1())
 		rc = mipi_dsi_panel_qrd1_power(on);
 	else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-						|| machine_is_msm8625_qrd5())
+						|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 		rc = mipi_dsi_panel_qrd3_power(on);
 	else
 		rc = mipi_dsi_panel_msm_power(on);
@@ -1362,7 +1362,7 @@ void __init msm_fb_add_devices(void)
 		platform_add_devices(qrd_fb_devices,
 				ARRAY_SIZE(qrd_fb_devices));
 	else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-						|| machine_is_msm8625_qrd5()) {
+						|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
 		mipi_NT35510_pdata.bl_lock = 1;
 		mipi_NT35516_pdata.bl_lock = 1;
 		if (disable_splash)
@@ -1391,7 +1391,7 @@ void __init msm_fb_add_devices(void)
 	msm_fb_register_device("mipi_dsi", &mipi_dsi_pdata);
 #endif
 	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-					|| machine_is_msm8625_qrd5()) {
+					|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
 		gpio_reg_2p85v = regulator_get(&mipi_dsi_device.dev,
 								"lcd_vdd");
 		if (IS_ERR(gpio_reg_2p85v))

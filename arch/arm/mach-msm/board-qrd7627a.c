@@ -902,7 +902,8 @@ static void __init add_platform_devices(void)
 				ARRAY_SIZE(msm8625_evb_devices));
 		platform_add_devices(qrd3_devices,
 				ARRAY_SIZE(qrd3_devices));
-	} else {
+	}
+	else {
 		platform_add_devices(qrd7627a_devices,
 				ARRAY_SIZE(qrd7627a_devices));
 	}
@@ -1062,6 +1063,18 @@ MACHINE_START(MSM8625_EVB, "QRD MSM8625 EVB")
 	.init_early	= qrd7627a_init_early,
 	.handle_irq	= gic_handle_irq,
 MACHINE_END
+
+MACHINE_START(MSM7X27A_QRD5A, "QRD MSM7x27A QRD5A")
+	.atag_offset	= 0x100,
+	.map_io		= msm_common_io_init,
+	.reserve	= msm7627a_reserve,
+	.init_irq	= msm_init_irq,
+	.init_machine	= msm_qrd_init,
+	.timer		= &msm_timer,
+	.init_early	= qrd7627a_init_early,
+	.handle_irq	= vic_handle_irq,
+MACHINE_END
+
 MACHINE_START(MSM8625_QRD7, "QRD MSM8625 QRD7")
 	.atag_offset	= 0x100,
 	.map_io		= msm8625_map_io,
