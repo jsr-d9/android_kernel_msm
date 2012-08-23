@@ -55,6 +55,12 @@
 
 #define PLATFORM_SUBTYPE_SGLTE	6
 
+#define HW_VERSION(major, minor)  (((major) << 16) | (minor))
+#define hw_version_is(major,minor)  \
+        ({ \
+                HW_VERSION((major),(minor))==socinfo_get_platform_version(); \
+        })
+
 enum msm_cpu {
 	MSM_CPU_UNKNOWN = 0,
 	MSM_CPU_7X01,

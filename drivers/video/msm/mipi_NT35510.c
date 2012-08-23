@@ -10,6 +10,9 @@
  * GNU General Public License for more details.
  *
  */
+#define DEBUG
+
+#include <mach/socinfo.h>
 
 #include "msm_fb.h"
 #include "mipi_dsi.h"
@@ -19,7 +22,7 @@ static struct msm_panel_common_pdata *mipi_nt35510_pdata;
 static struct dsi_buf nt35510_tx_buf;
 static struct dsi_buf nt35510_rx_buf;
 
-static int mipi_nt35510_bl_ctrl;
+static int mipi_nt35510_bl_ctrl = 0;
 
 #define NT35510_SLEEP_OFF_DELAY 150
 #define NT35510_DISPLAY_ON_DELAY 150
@@ -473,6 +476,9 @@ static int mipi_nt35510_lcd_on(struct platform_device *pdev)
 	struct msm_fb_data_type *mfd;
 	struct mipi_panel_info *mipi;
 	static int rotate;
+
+	pr_debug("mipi_nt35510_lcd_on E\n");
+
 	mfd = platform_get_drvdata(pdev);
 	if (!mfd)
 		return -ENODEV;
@@ -511,6 +517,8 @@ static int mipi_nt35510_lcd_on(struct platform_device *pdev)
 			ARRAY_SIZE(nt35510_cmd_display_on_cmds_rotate));
 		}
 	}
+
+	pr_debug("mipi_nt35510_lcd_on X\n");
 
 	return 0;
 }
@@ -599,6 +607,11 @@ static int __devinit mipi_nt35510_lcd_probe(struct platform_device *pdev)
 		mipi_nt35510_pdata = pdev->dev.platform_data;
 		if (mipi_nt35510_pdata->bl_lock)
 			spin_lock_init(&mipi_nt35510_pdata->bl_spinlock);
+
+                /* PVT use PWM as backlight control method */
+                if(machine_is_msm8625_qrd5() && hw_version_is(3, 0))
+                        mipi_nt35510_bl_ctrl = 1;
+
 		return 0;
 	}
 
