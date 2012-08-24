@@ -33,6 +33,10 @@
 
 #include <mach/msm_rpcrouter.h>
 #include <mach/msm_battery.h>
+#ifdef CONFIG_MSM_SM_EVENT
+#include <linux/sm_event_log.h>
+#include <linux/sm_event.h>
+#endif
 
 #define	BATTERY_RPC_PROG		0x30000089
 #define	BATTERY_RPC_VER_5_1		0x00050001

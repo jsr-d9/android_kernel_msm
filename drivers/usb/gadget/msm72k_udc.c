@@ -148,6 +148,9 @@ static void usb_do_remote_wakeup(struct work_struct *w);
 #define USB_FLAG_CONFIGURED     0x0020
 
 #define USB_CHG_DET_DELAY	msecs_to_jiffies(100)
+#ifdef CONFIG_USB_SUPPORT_NON_STANDARD_WALL_CHARGER
+#define USB_CHG_DET_NON_STANDARD_WALL_CHG_DELAY msecs_to_jiffies(1000)
+#endif
 #define REMOTE_WAKEUP_DELAY	msecs_to_jiffies(1000)
 #define PHY_STATUS_CHECK_DELAY	(jiffies + msecs_to_jiffies(1000))
 #define EPT_PRIME_CHECK_DELAY	(jiffies + msecs_to_jiffies(1000))
@@ -193,6 +196,9 @@ struct usb_info {
 	unsigned chg_type_retry_cnt;
 	bool proprietary_chg;
 	struct delayed_work chg_det;
+#ifdef CONFIG_USB_SUPPORT_NON_STANDARD_WALL_CHARGER
+	struct delayed_work chg_det_non_standard_wall_charger;
+#endif
 	struct delayed_work chg_stop;
 	struct msm_hsusb_gadget_platform_data *pdata;
 	struct work_struct phy_status_check;
@@ -426,6 +432,35 @@ static void usb_chg_stop(struct work_struct *w)
 		usb_phy_set_power(ui->xceiv, 0);
 }
 
+#ifdef CONFIG_USB_SUPPORT_NON_STANDARD_WALL_CHARGER
+static void usb_chg_detect_non_standard_wall_charger(struct work_struct *w)
+{
+	struct usb_info *ui = container_of(w, struct usb_info,
+		chg_det_non_standard_wall_charger.work);
+	struct msm_otg *otg = to_msm_otg(ui->xceiv);
+	enum chg_type temp = USB_CHG_TYPE__INVALID;
+	unsigned long flags;
+
+	pr_debug("enter usb_chg_detect_non_standard_wall_charger\n");
+	spin_lock_irqsave(&ui->lock, flags);
+	if (ui->usb_state == USB_STATE_NOTATTACHED) {
+		spin_unlock_irqrestore(&ui->lock, flags);
+		return;
+	}
+	temp = atomic_read(&otg->chg_type);
+	spin_unlock_irqrestore(&ui->lock, flags);
+	pr_debug("read curr charger type: %d\n", temp);
+	// Set type as non-standard wall-charger if the type couldn't be determined
+	// at the time was delayed 5s after pull-up D+
+	if(temp != USB_CHG_TYPE__WALLCHARGER &&
+		temp != USB_CHG_TYPE__SDP) {
+		pr_debug("set charger type as non-standard wall-charger\n");
+		atomic_set(&otg->chg_type, USB_CHG_TYPE__UNKNOWN);
+		usb_phy_set_power(ui->xceiv, 500);
+	}
+}
+#endif
+
 static void usb_chg_detect(struct work_struct *w)
 {
 	struct usb_info *ui = container_of(w, struct usb_info, chg_det.work);
@@ -439,8 +474,16 @@ static void usb_chg_detect(struct work_struct *w)
 		spin_unlock_irqrestore(&ui->lock, flags);
 		return;
 	}
-
+#ifdef CONFIG_USB_SUPPORT_NON_STANDARD_WALL_CHARGER
+	temp = atomic_read(&otg->chg_type);
+	pr_debug("curr charger type: %d\n", temp);
+	if(USB_CHG_TYPE__INVALID == temp) {
+#endif
 	temp = usb_get_chg_type(ui);
+	atomic_set(&otg->chg_type, temp);
+#ifdef CONFIG_USB_SUPPORT_NON_STANDARD_WALL_CHARGER
+	}
+#endif	
 	if (temp != USB_CHG_TYPE__WALLCHARGER && temp != USB_CHG_TYPE__SDP
 					&& !ui->chg_type_retry_cnt) {
 		schedule_delayed_work(&ui->chg_det, USB_CHG_DET_DELAY);
@@ -454,7 +497,6 @@ static void usb_chg_detect(struct work_struct *w)
 	}
 	spin_unlock_irqrestore(&ui->lock, flags);
 
-	atomic_set(&otg->chg_type, temp);
 	maxpower = usb_get_max_power(ui);
 	if (maxpower > 0)
 		usb_phy_set_power(ui->xceiv, maxpower);
@@ -942,10 +984,11 @@ static void handle_setup(struct usb_info *ui)
 {
 	struct usb_ctrlrequest ctl;
 	struct usb_request *req = ui->setup_req;
+	struct msm_otg *otg = to_msm_otg(ui->xceiv);
 	int ret;
+	unsigned long flags;
 #ifdef CONFIG_USB_OTG
 	u8 hnp;
-	unsigned long flags;
 #endif
 	/* USB hardware sometimes generate interrupt before
 	 * 8 bytes of SETUP packet are written to system memory.
@@ -1066,6 +1109,14 @@ static void handle_setup(struct usb_info *ui)
 	if (ctl.bRequestType == (USB_DIR_OUT | USB_TYPE_STANDARD)) {
 		if (ctl.bRequest == USB_REQ_SET_CONFIGURATION) {
 			atomic_set(&ui->configured, !!ctl.wValue);
+			atomic_set(&otg->chg_type, USB_CHG_TYPE__SDP);
+
+			spin_lock_irqsave(&ui->lock, flags);
+			ui->usb_state = USB_STATE_CONFIGURED;
+			ui->flags = USB_FLAG_CONFIGURED;
+			spin_unlock_irqrestore(&ui->lock, flags);
+
+			schedule_work(&ui->work);
 			msm_hsusb_set_state(USB_STATE_CONFIGURED);
 		} else if (ctl.bRequest == USB_REQ_SET_ADDRESS) {
 			/*
@@ -1309,13 +1360,13 @@ static irqreturn_t usb_interrupt(int irq, void *data)
 		if (atomic_read(&ui->configured)) {
 			wake_lock(&ui->wlock);
 
-			spin_lock_irqsave(&ui->lock, flags);
-			ui->usb_state = USB_STATE_CONFIGURED;
-			ui->flags = USB_FLAG_CONFIGURED;
-			spin_unlock_irqrestore(&ui->lock, flags);
+//			spin_lock_irqsave(&ui->lock, flags);
+//			ui->usb_state = USB_STATE_CONFIGURED;
+//			ui->flags = USB_FLAG_CONFIGURED;
+//			spin_unlock_irqrestore(&ui->lock, flags);
 
 			ui->driver->resume(&ui->gadget);
-			schedule_work(&ui->work);
+//			schedule_work(&ui->work);
 		} else {
 			msm_hsusb_set_state(USB_STATE_DEFAULT);
 		}
@@ -1435,6 +1486,10 @@ static void usb_prepare(struct usb_info *ui)
 
 	INIT_WORK(&ui->work, usb_do_work);
 	INIT_DELAYED_WORK(&ui->chg_det, usb_chg_detect);
+#ifdef CONFIG_USB_SUPPORT_NON_STANDARD_WALL_CHARGER
+	INIT_DELAYED_WORK(&ui->chg_det_non_standard_wall_charger,
+		usb_chg_detect_non_standard_wall_charger);
+#endif
 	INIT_DELAYED_WORK(&ui->chg_stop, usb_chg_stop);
 	INIT_DELAYED_WORK(&ui->rw_work, usb_do_remote_wakeup);
 	if (ui->pdata && ui->pdata->is_phy_status_timer_on)
@@ -1671,7 +1726,8 @@ static void usb_do_work(struct work_struct *w)
 				/* TBD: Initiate LPM at usb bus suspend */
 				break;
 			}
-			if (flags & USB_FLAG_CONFIGURED) {
+			if ((flags & USB_FLAG_CONFIGURED)
+					&& (USB_CHG_TYPE__SDP == atomic_read(&otg->chg_type))){
 				int maxpower = usb_get_max_power(ui);
 
 				/* We may come here even when no configuration
@@ -1680,6 +1736,7 @@ static void usb_do_work(struct work_struct *w)
 				 */
 				switch_set_state(&ui->sdev,
 						atomic_read(&ui->configured));
+				pr_debug("set power  %dmA when configured\n", maxpower);
 
 				if (maxpower < 0)
 					break;
@@ -1733,10 +1790,16 @@ static void usb_do_work(struct work_struct *w)
 					break;
 				msm72k_pullup_internal(&ui->gadget, 1);
 
-				if (!ui->gadget.is_a_peripheral)
+				if (!ui->gadget.is_a_peripheral) {
 					schedule_delayed_work(
 							&ui->chg_det,
 							USB_CHG_DET_DELAY);
+#ifdef CONFIG_USB_SUPPORT_NON_STANDARD_WALL_CHARGER
+					schedule_delayed_work(
+						&ui->chg_det_non_standard_wall_charger,
+						USB_CHG_DET_NON_STANDARD_WALL_CHG_DELAY);
+#endif
+				}
 			}
 			break;
 		}
@@ -2601,6 +2664,7 @@ static ssize_t show_usb_chg_type(struct device *dev,
 	char *chg_type[] = {"STD DOWNSTREAM PORT",
 			"CARKIT",
 			"DEDICATED CHARGER",
+			"UNKNOWN CHARGER",
 			"INVALID"};
 
 	count = snprintf(buf, PAGE_SIZE, "%s",

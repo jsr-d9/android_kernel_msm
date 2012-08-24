@@ -644,7 +644,9 @@ void hsusb_chg_connected(enum chg_type chgtype)
 	char *chg_types[] = {"STD DOWNSTREAM PORT",
 			"CARKIT",
 			"DEDICATED CHARGER",
-			"INVALID"};
+			"UNKNOWN",
+			"INVALID",
+	};
 
 	if (chgtype == USB_CHG_TYPE__INVALID) {
 		msm_chg_usb_i_is_not_available();
