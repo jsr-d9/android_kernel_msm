@@ -190,6 +190,7 @@ static struct kobj_attribute mxt_virtual_keys_attr = {
 	},
 	.show = &mxt_virtual_keys_register,
 };
+#endif
 
 static struct attribute *mxt_virtual_key_properties_attrs[] = {
 	&mxt_virtual_keys_attr.attr,
@@ -688,6 +689,42 @@ static void __init ft5x06_touchpad_setup(void)
 				ARRAY_SIZE(ft5x06_device_info));
 }
 
+#ifdef CONFIG_LEDS_TRICOLOR_FLAHSLIGHT
+
+#define LED_FLASH_EN1 13
+#define QRD7_LED_FLASH_EN 96
+
+static struct msm_gpio tricolor_leds_gpio_cfg_data[] = {
+{
+	GPIO_CFG(-1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
+		"flashlight"},
+};
+
+static int tricolor_leds_gpio_setup(void) {
+	int ret = 0;
+	if(machine_is_msm8625_qrd5())
+	{
+		tricolor_leds_gpio_cfg_data[0].gpio_cfg = GPIO_CFG(LED_FLASH_EN1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA);
+	}
+	else if(machine_is_msm8625_qrd7())
+	{
+		tricolor_leds_gpio_cfg_data[0].gpio_cfg = GPIO_CFG(QRD7_LED_FLASH_EN, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA);
+	}
+
+	ret = msm_gpios_request_enable(tricolor_leds_gpio_cfg_data,
+			sizeof(tricolor_leds_gpio_cfg_data)/sizeof(struct msm_gpio));
+	if( ret<0 )
+		printk(KERN_ERR "%s: Failed to obtain tricolor_leds GPIO . Code: %d\n",
+				__func__, ret);
+	return ret;
+}
+
+
+static struct platform_device msm_device_tricolor_leds = {
+	.name   = "tricolor leds and flashlight",
+	.id = -1,
+};
+#endif
 /* SKU3/SKU7 keypad device information */
 #define KP_INDEX_SKU3(row, col) ((row)*ARRAY_SIZE(kp_col_gpios_qrd3) + (col))
 static unsigned int kp_row_gpios_qrd3[] = {31, 32};
@@ -873,4 +910,10 @@ void __init qrd7627a_add_io_devices(void)
 		platform_device_register(&pmic_mpp_leds_pdev);
 		platform_device_register(&tricolor_leds_pdev);
 	}
+	
+#ifdef CONFIG_LEDS_TRICOLOR_FLAHSLIGHT
+	    /*tricolor leds init*/
+	platform_device_register(&msm_device_tricolor_leds);
+	tricolor_leds_gpio_setup();
+#endif
 }
