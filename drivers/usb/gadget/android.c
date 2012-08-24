@@ -1065,29 +1065,32 @@ struct mass_storage_function_config {
 static int mass_storage_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
 {
-	struct android_dev *dev = _android_dev;
 	struct mass_storage_function_config *config;
 	struct fsg_common *common;
-	int err;
-	int i;
-	const char *name[2];
+	int err , i ,j;
+	char lun_name[10];
 
 	config = kzalloc(sizeof(struct mass_storage_function_config),
 								GFP_KERNEL);
 	if (!config)
 		return -ENOMEM;
 
-	config->fsg.nluns = 1;
-	name[0] = "lun";
-	if (dev->pdata->cdrom) {
-		config->fsg.nluns = 2;
-		config->fsg.luns[1].cdrom = 1;
-		config->fsg.luns[1].ro = 1;
-		config->fsg.luns[1].removable = 0;
-		name[1] = "lun0";
+	config->fsg.nluns = 3;
+	for (i = 0; i < config->fsg.nluns;i++){
+		config->fsg.luns[i].removable = 1;
+		config->fsg.luns[i].nofua = 1; 
+		/*
+		 *lun 0 - cdrom
+		 *lun 1 - external storage
+		 *lun 2 - internal storage
+		 */
+		if(i == 0) {
+			config->fsg.luns[i].cdrom = 1;
+			config->fsg.luns[i].ro = 1;
+		}
+		else
+			config->fsg.luns[i].cdrom = 0;
 	}
-
-	config->fsg.luns[0].removable = 1;
 
 	common = fsg_common_init(NULL, cdev, &config->fsg);
 	if (IS_ERR(common)) {
@@ -1095,24 +1098,22 @@ static int mass_storage_function_init(struct android_usb_function *f,
 		return PTR_ERR(common);
 	}
 
-	for (i = 0; i < config->fsg.nluns; i++) {
-		err = sysfs_create_link(&f->dev->kobj,
-					&common->luns[i].dev.kobj,
-					name[i]);
-		if (err)
-			goto error;
+	for(i = 0 ; i < config->fsg.nluns;i++){
+		snprintf(lun_name ,sizeof(lun_name),"lun%d",i);
+		err = sysfs_create_link(&f->dev->kobj,&common->luns[i].dev.kobj,lun_name);
+		if(err){
+			for(j = 0; j < i;j++){
+				snprintf(lun_name ,sizeof(lun_name),"lun%d",j);
+				sysfs_delete_link(&f->dev->kobj,&common->luns[j].dev.kobj,lun_name);
+			}
+			fsg_common_release(&common->ref);
+			kfree(config);
+			return err;
+		}
 	}
-
 	config->common = common;
 	f->config = config;
 	return 0;
-error:
-	for (; i > 0 ; i--)
-		sysfs_remove_link(&f->dev->kobj, name[i-1]);
-
-	fsg_common_release(&common->ref);
-	kfree(config);
-	return err;
 }
 
 static void mass_storage_function_cleanup(struct android_usb_function *f)
