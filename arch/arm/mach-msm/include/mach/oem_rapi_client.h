@@ -27,6 +27,7 @@ enum {
 	/*
 	 * list of oem rapi client events
 	 */
+	OEM_RAPI_CLIENT_EVENT_TRI_COLOR_LED_WORK = 21,
 
 	OEM_RAPI_CLIENT_EVENT_MAX
 
