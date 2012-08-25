@@ -508,7 +508,8 @@ static void usb_chg_detect(struct work_struct *w)
 	 * when wallcharger is attached. To allow suspend pc, release the
 	 * wakelock which will be re-acquired for any sub-sequent usb interrupts
 	 * */
-	if (temp == USB_CHG_TYPE__WALLCHARGER) {
+	if ((temp == USB_CHG_TYPE__WALLCHARGER) ||
+	    (temp == USB_CHG_TYPE__UNKNOWN)) {
 		pm_runtime_put_sync(&ui->pdev->dev);
 		wake_unlock(&ui->wlock);
 	}
