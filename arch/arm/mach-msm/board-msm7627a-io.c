@@ -731,7 +731,7 @@ static struct platform_device kp_pdev_qrd3 = {
 
 static struct led_info ctp_backlight_info = {
 	.name           = "button-backlight",
-	.flags          = PM_MPP__I_SINK__LEVEL_40mA << 16 | PM_MPP_7,
+	.flags          = PM_MPP__I_SINK__LEVEL_10mA << 16 | PM_MPP_7,
 };
 
 static struct led_platform_data ctp_backlight_pdata = {
