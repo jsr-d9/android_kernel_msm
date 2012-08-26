@@ -84,11 +84,11 @@ struct msm_battery_info {
 	struct power_supply *msm_psy_battery;
 	struct power_supply *msm_psy_unknown;
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#ifdef CONFIG_BATTERY_EARLYSUSPEND
 	struct early_suspend early_suspend;
 	bool is_suspended;
 	struct mutex suspend_lock;
-#endif /* CONFIG_HAS_EARLYSUSPEND */
+#endif /* CONFIG_BATTERY_EARLYSUSPEND */
 
 	struct workqueue_struct	*battery_queue;
 	struct delayed_work battery_work;
@@ -379,9 +379,10 @@ void msm_battery_update_psy_status(void)
 #ifdef CONFIG_MSM_SM_EVENT
 	sm_msm_battery_data_t battery_data;
 #endif
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#ifdef CONFIG_BATTERY_EARLYSUSPEND
 	is_awake = !msm_battery_info.is_suspended;
 #endif
+	pr_debug("BATT: msm_battery_update_psy_status");
 
 	mutex_lock(&msm_battery_info.update_mutex);
 
@@ -540,7 +541,7 @@ uint32_t msm_batt_get_batt_voltage (void)
 EXPORT_SYMBOL(msm_batt_get_batt_voltage);
 #endif
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#ifdef CONFIG_BATTERY_EARLYSUSPEND
 void msm_battery_early_suspend(struct early_suspend *h)
 {
 	pr_debug("BATT: %s\n", __func__);
@@ -763,7 +764,7 @@ static int msm_battery_cleanup(void)
 	if(msm_battery_info.battery_queue)
 		destroy_workqueue(msm_battery_info.battery_queue);
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#ifdef CONFIG_BATTERY_EARLYSUSPEND
 	if (msm_battery_info.early_suspend.suspend == msm_battery_early_suspend)
 		unregister_early_suspend(&msm_battery_info.early_suspend);
 #endif
@@ -1005,7 +1006,7 @@ static int __devinit msm_battery_probe(struct platform_device *pdev)
 	power_supply_changed(msm_battery_info.current_psy);
 
 #ifndef CONFIG_BATTERY_MSM_FAKE
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#ifdef CONFIG_BATTERY_EARLYSUSPEND
 	msm_battery_info.early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN;
 	msm_battery_info.early_suspend.suspend = msm_battery_early_suspend;
 	msm_battery_info.early_suspend.resume = msm_battery_late_resume;
