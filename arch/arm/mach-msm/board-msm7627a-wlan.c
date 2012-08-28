@@ -22,7 +22,7 @@
 #include "timer.h"
 
 #define GPIO_WLAN_3V3_EN 119
-static const char *id = "WLAN";
+static const char *id = "WLPW";
 
 enum {
 	WLAN_VREG_S3 = 0,
@@ -41,11 +41,11 @@ struct wlan_vreg_info {
 
 static struct wlan_vreg_info vreg_info[] = {
 	{"msme1",     1800000, 1800000, 2,  0, NULL},
-	{"bt",        3300000, 3300000, 21, 1, NULL},
-	{"wlan4",     1800000, 1800000, 23, 1, NULL}
+	{"wlan3v3",        3300000, 3300000, 21, 1, NULL},
+	{"wlan1v8",     1800000, 1800000, 0, 0, NULL}
 };
 
-int gpio_wlan_sys_rest_en = 134;
+int gpio_wlan_sys_rest_en = 124;
 static void gpio_wlan_config(void)
 {
 	if (machine_is_msm7627a_qrd1() || machine_is_msm7627a_evb()

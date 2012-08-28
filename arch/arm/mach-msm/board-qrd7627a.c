@@ -79,11 +79,6 @@
 #define I2C_NORMAL        0x40
 
 
-static struct platform_device msm_wlan_ar6000_pm_device = {
-	.name           = "wlan_ar6000_pm_dev",
-	.id             = -1,
-};
-
 static struct msm_gpio qup_i2c_gpios_io[] = {
 	{ GPIO_CFG(60, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
 		"qup_scl" },
@@ -586,6 +581,14 @@ static struct platform_device *common_devices[] __initdata = {
 #endif
 };
 
+
+static struct platform_device msm_wlan_ar6000_pm_device = {
+	.name           = "wlan_ar6000_pm_dev",
+	.id             = 1,
+	.num_resources  =       0,
+        .resource       =       NULL,
+};
+
 static struct platform_device *qrd7627a_devices[] __initdata = {
 	&msm_device_dmov,
 	&msm_device_smd,
@@ -895,9 +898,14 @@ static void __init msm7627a_init_regulators(void)
 				__func__, rc);
 }
 
+#define NV_ITEM_WLAN_MAC_ADDR   4678
+extern int msm_read_nv(unsigned int nv_item, void *buf);
+unsigned char wlan_mac_addr[6];
+
 static int __init msm_qrd_init_ar6000pm(void)
 {
 	msm_wlan_ar6000_pm_device.dev.platform_data = &ar600x_wlan_power;
+	msm_read_nv(NV_ITEM_WLAN_MAC_ADDR,wlan_mac_addr);
 	return platform_device_register(&msm_wlan_ar6000_pm_device);
 }
 
