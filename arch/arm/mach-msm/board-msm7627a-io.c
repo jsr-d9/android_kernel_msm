@@ -172,12 +172,12 @@ static ssize_t mxt_virtual_keys_register(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
 	char *virtual_keys = __stringify(EV_KEY) ":" __stringify(KEY_MENU) \
-		":60:840:120:80" ":" __stringify(EV_KEY) \
-		":" __stringify(KEY_HOME)   ":180:840:120:80" \
+		":60:860:110:80" ":" __stringify(EV_KEY) \
+		":" __stringify(KEY_HOME)   ":180:860:110:80" \
 		":" __stringify(EV_KEY) ":" \
-		__stringify(KEY_BACK) ":300:840:120:80" \
+		__stringify(KEY_BACK) ":300:860:110:80" \
 		":" __stringify(EV_KEY) ":" \
-		__stringify(KEY_SEARCH)   ":420:840:120:80" "\n";
+		__stringify(KEY_SEARCH)   ":420:860:110:80" "\n";
 
 	return snprintf(buf, strnlen(virtual_keys, MAX_VKEY_LEN) + 1 , "%s",
 			virtual_keys);
