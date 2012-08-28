@@ -267,11 +267,11 @@ static const u8 mxt_config_data_qrd5[] = {
 	/* T6 Object */
 	0, 0, 0, 0, 0, 0,
 	/* T38 Object */
-	20, 1, 0, 25, 9, 12, 0, 0,
+	21, 0, 2, 0, 0, 0, 0, 0,
 	/* T7 Object */
 	24, 12, 10,
 	/* T8 Object */
-	30, 0, 20, 20, 0, 0, 0, 0, 10, 192,
+	30, 0, 20, 20, 10, 0, 0, 0, 10, 192,
 	/* T9 Object */
 	131, 0, 0, 18, 11, 0, 16, 70, 2, 1,
 	0, 2, 1, 62, 10, 10, 10, 10, 107, 3,
@@ -317,6 +317,23 @@ static struct mxt_config_info mxt_config_array[] = {
 		.version	= 0x10,
 		.build		= 0xAA,
 	},
+	{
+		.config		= mxt_config_data_qrd5_truly,
+		.config_length	= ARRAY_SIZE(mxt_config_data_qrd5_truly),
+		.family_id	= 0x81,
+		.variant_id	= 0x01,
+		.version	= 0x10,
+		.build		= 0xAA,
+	},
+	{
+		.config		= mxt_config_data_qrd5_new,
+		.config_length	= ARRAY_SIZE(mxt_config_data_qrd5_new),
+		.family_id	= 0x81,
+		.variant_id	= 0x18,
+		.version	= 0x10,
+		.build		= 0x03,
+		.fw_name	= "mxt224EC25.enc",
+	},
 };
 
 static int mxt_key_codes[MXT_KEYARRAY_MAX_KEYS] = {
@@ -337,7 +354,7 @@ static struct mxt_platform_data mxt_platform_data = {
 	.disp_maxx		= 479,
 	.disp_miny		= 0,
 	.disp_maxy		= 799,
-	.irqflags		= IRQF_TRIGGER_FALLING,
+	.irqflags		= IRQF_TRIGGER_LOW,
 	.i2c_pull_up		= true,
 	.reset_gpio		= MXT_TS_RESET_GPIO,
 	.irq_gpio		= MXT_TS_IRQ_GPIO,
