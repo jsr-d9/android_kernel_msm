@@ -1,4 +1,4 @@
-/* Copyright (c) 2009, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -28,6 +28,8 @@ enum {
 	 * list of oem rapi client events
 	 */
 	OEM_RAPI_CLIENT_EVENT_TRI_COLOR_LED_WORK = 21,
+    OEM_RAPI_STREAMING_SILENT_PROFILE_SET = 30,
+    OEM_RAPI_STREAMING_SILENT_PROFILE_GET = 31,
 
 	OEM_RAPI_CLIENT_EVENT_DEBUG_SLEEP_MONITOR = 41,
 
