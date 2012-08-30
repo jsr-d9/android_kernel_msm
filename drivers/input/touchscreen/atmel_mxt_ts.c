@@ -3029,11 +3029,20 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	error = mxt_initialize(data);
 	if (error)
 		goto err_reset_gpio_req;
-	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
+	data->atmel_wq = create_singlethread_workqueue("atmel_wq");
+	if (!data->atmel_wq) {
+		dev_err(&data->client->dev,
+			"fail to create work queue for atmel CTP!\n");
+		error = -ENOMEM;
+		goto err_free_object;
+	}
+	INIT_WORK(&data->work, atmel_ts_work_func);
+	INIT_DELAYED_WORK(&data->delayed_work, mxt_confirm_calibration);
+	error = request_irq(client->irq, mxt_interrupt,
 			pdata->irqflags, client->dev.driver->name, data);
 	if (error) {
 		dev_err(&client->dev, "Failed to register interrupt\n");
-		goto err_free_object;
+		goto err_free_wq;
 	}
 
 	if (data->state == APPMODE) {

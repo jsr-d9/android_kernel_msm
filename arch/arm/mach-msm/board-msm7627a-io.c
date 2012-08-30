@@ -926,8 +926,9 @@ void __init qrd7627a_add_io_devices(void)
 		platform_device_register(&kp_pdev_qrd3);
 
 	/* leds */
-	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb() ||
-						machine_is_msm8625_evt()) {
+	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
+            || machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
+
 		platform_device_register(&pmic_mpp_leds_pdev);
 		platform_device_register(&tricolor_leds_pdev);
 	}
