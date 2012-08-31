@@ -274,6 +274,7 @@ static struct msm_camera_sensor_info msm_camera_sensor_ov5647_data = {
 
 #endif
 
+#ifdef CONFIG_OV8825
 static struct msm_camera_gpio_conf gpio_conf_ov8825 = {
 	.camera_off_table = camera_off_gpio_table,
 	.camera_on_table = camera_on_gpio_table,
@@ -320,6 +321,7 @@ static struct msm_camera_sensor_info msm_camera_sensor_ov8825_data = {
 	.sensor_type = BAYER_SENSOR,
 	.actuator_info = &msm_act_main_cam_3_info,
 };
+#endif
 
 #ifdef CONFIG_MT9E013
 static struct msm_camera_sensor_flash_data flash_mt9e013 = {
@@ -1049,7 +1051,9 @@ static struct platform_device *camera_devices_evb[] __initdata = {
 #ifdef CONFIG_WEBCAM_OV7692_QRD
 	&msm_camera_sensor_ov7692,
 #endif
+#ifdef CONFIG_OV8825
 	&msm_camera_sensor_ov8825,
+#endif
 };
 #endif
 
