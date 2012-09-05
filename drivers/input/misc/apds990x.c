@@ -1,22 +1,26 @@
 /*
- *  apds990x.c - Linux kernel modules for ambient light + proximity sensor
+ * This file is part of the APDS990x sensor driver.
+ * Chip is combined proximity and ambient light sensor.
  *
- *  Copyright (C) 2010 Lee Kai Koon <kai-koon.lee@avagotech.com>
- *  Copyright (C) 2010 Avago Technologies
- *  Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+ * Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
+ * Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 2 and
- *  only version 2 as published by the Free Software Foundation.
-
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * Contact: Samu Onkalo <samu.p.onkalo@nokia.com>
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA
+ *
  */
 
 #include <linux/kernel.h>
@@ -1153,9 +1157,9 @@ static void __exit apds990x_exit(void)
 	i2c_del_driver(&apds990x_driver);
 }
 
-MODULE_AUTHOR("Lee Kai Koon <kai-koon.lee@avagotech.com>");
-MODULE_DESCRIPTION("APDS990x ambient light + proximity sensor driver");
-MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("APDS990X combined ALS and proximity sensor");
+MODULE_AUTHOR("Samu Onkalo, Nokia Corporation");
+MODULE_LICENSE("GPL v2");
 MODULE_VERSION(DRIVER_VERSION);
 
 module_init(apds990x_init);
