@@ -15,7 +15,6 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	$
  */
-#define DEBUG
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 #include <linux/interrupt.h>
@@ -77,7 +76,6 @@ struct mpu_private_data {
 };
 
 struct mpu_private_data *mpu_private_data;
-static struct i2c_client *this_client;
 
 static void mpu_pm_timeout(u_long data)
 {
@@ -134,7 +132,7 @@ static int mpu_pm_notifier_callback(struct notifier_block *nb,
 static int mpu_dev_open(struct inode *inode, struct file *file)
 {
 	struct mpu_private_data *mpu =
-	    (struct mpu_private_data *) i2c_get_clientdata(this_client);
+	    container_of(file->private_data, struct mpu_private_data, dev);
 	struct i2c_client *client = mpu->client;
 	int result;
 	int ii;
@@ -147,7 +145,6 @@ static int mpu_dev_open(struct inode *inode, struct file *file)
 		return -EBUSY;
 	}
 	mpu->pid = current->pid;
-	file->private_data = &mpu->dev;
 
 	/* Reset the sensors to the default */
 	if (result) {
@@ -586,7 +583,7 @@ static long mpu_dev_ioctl(struct file *file,
 
 	retval = mutex_lock_interruptible(&mpu->mutex);
 	if (retval) {
-		dev_err(&this_client->adapter->dev,
+		dev_err(&client->adapter->dev,
 			"%s: mutex_lock_interruptible returned %d\n",
 			__func__, retval);
 		return retval;
@@ -776,7 +773,8 @@ static long mpu_dev_ioctl(struct file *file,
 	};
 
 	mutex_unlock(&mpu->mutex);
-	//dev_dbg(&client->adapter->dev, "%s: %08x, %08lx, %d\n",__func__, cmd, arg, retval);	
+	dev_dbg(&client->adapter->dev, "%s: %08x, %08lx, %d\n",
+		__func__, cmd, arg, retval);
 
 	if (retval > 0)
 		retval = -retval;
@@ -887,12 +885,7 @@ static const struct file_operations mpu_fops = {
 	.owner = THIS_MODULE,
 	.read = mpu_read,
 	.poll = mpu_poll,
-#if HAVE_COMPAT_IOCTL
-	.compat_ioctl = mpu_dev_ioctl,
-#endif
-#if HAVE_UNLOCKED_IOCTL
 	.unlocked_ioctl = mpu_dev_ioctl,
-#endif	
 	.open = mpu_dev_open,
 	.release = mpu_release,
 };
@@ -994,11 +987,11 @@ out_unlock_mutex:
 		warn_result = slaveirq_init(slave_client->adapter,
 					slave_pdata, irq_name);
 		if (result)
-			dev_err(&slave_client->adapter->dev,
+			dev_WARN(&slave_client->adapter->dev,
 				"%s irq assigned error: %d\n",
 				slave_descr->name, warn_result);
 	} else {
-		dev_warn(&slave_client->adapter->dev,
+		dev_WARN(&slave_client->adapter->dev,
 			"%s irq not assigned: %d %d %d\n",
 			slave_descr->name,
 			result, (int)irq_name, slave_pdata->irq);
@@ -1094,7 +1087,6 @@ int mpu_probe(struct i2c_client *client, const struct i2c_device_id *devid)
 	}
 	mpu_private_data = mpu;
 	i2c_set_clientdata(client, mpu);
-	this_client = client;	
 	mpu->client = client;
 
 	init_waitqueue_head(&mpu->mpu_event_wait);

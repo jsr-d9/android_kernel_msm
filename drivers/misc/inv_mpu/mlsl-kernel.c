@@ -16,7 +16,6 @@
 	$
  */
 
-#include <linux/module.h>
 #include "mlsl.h"
 #include <linux/i2c.h>
 #include "log.h"

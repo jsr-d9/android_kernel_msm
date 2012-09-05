@@ -16,8 +16,6 @@ inv_mpu_lsm303dlx_m-objs +=	lsm303dlx_m.o
 obj-$(CONFIG_MPU_SENSORS_MMC314X) += inv_mpu_mmc314x.o
 inv_mpu_mmc314x-objs +=	mmc314x.o
 
-obj-$(CONFIG_MPU_SENSORS_MMC328X) += inv_mpu_mmc328x.o
-inv_mpu_mmc328x-objs +=	mmc328xms.o
 obj-$(CONFIG_MPU_SENSORS_YAS529) += inv_mpu_yas529.o
 inv_mpu_yas529-objs +=	yas529-kernel.o
 
