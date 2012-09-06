@@ -135,19 +135,33 @@ static ssize_t led_blink_solid_store(struct device *dev,
 #endif
 	spin_lock_irqsave(&tricolor_led->led_lock, flags);
 	if(blink){
-		if(color == LED_COLOR_RED)
-			input = RED_BLINK;
-		if(color == LED_COLOR_GREEN)
-			input = GREEN_BLINK;
-		if(color == LED_COLOR_BLUE)
-			input = BLUE_BLINK;
+		switch(color) {
+			case LED_COLOR_RED:
+				input = RED_BLINK;
+				break;
+			case LED_COLOR_GREEN:
+				input = GREEN_BLINK;
+				break;
+			case LED_COLOR_BLUE:
+				input = BLUE_BLINK;
+				break;
+			default:
+				break;
+		}
 	} else {
-		if(color == LED_COLOR_RED)
-			input = RED_BLINK_OFF;
-		if(color == LED_COLOR_GREEN)
-			input = GREEN_BLINK_OFF;
-		if(color == LED_COLOR_BLUE)
-			input = BLUE_BLINK_OFF;
+		switch(color) {
+			case LED_COLOR_RED:
+				input = RED_BLINK_OFF;
+				break;
+			case LED_COLOR_GREEN:
+				input = GREEN_BLINK_OFF;
+				break;
+			case LED_COLOR_BLUE:
+				input = BLUE_BLINK_OFF;
+				break;
+			default:
+				break;
+		}
 	}
 	tricolor_led->led_data[color] = blink;
 	spin_unlock_irqrestore(&tricolor_led->led_lock, flags);
@@ -178,19 +192,33 @@ static void led_brightness_set_tricolor(struct led_classdev *led_cdev,
 
 	spin_lock_irqsave(&tricolor_led->led_lock, flags);
 	if(brightness){
-		if(color == LED_COLOR_RED)
-			input = RED_ON;
-		if(color == LED_COLOR_GREEN)
-			input = GREEN_ON;
-		if(color == LED_COLOR_BLUE)
-			input = BLUE_ON;
+		switch(color) {
+			case LED_COLOR_RED:
+				input = RED_ON;
+				break;
+			case LED_COLOR_GREEN:
+				input = GREEN_ON;
+				break;
+			case LED_COLOR_BLUE:
+				input = BLUE_ON;
+				break;
+			default:
+				break;
+		}
 	} else {
-		if(color == LED_COLOR_RED)
-			input = RED_OFF;
-		if(color == LED_COLOR_GREEN)
-			input = GREEN_OFF;
-		if(color == LED_COLOR_BLUE)
-			input = BLUE_OFF;
+		switch(color) {
+			case LED_COLOR_RED:
+				input = RED_OFF;
+				break;
+			case LED_COLOR_GREEN:
+				input = GREEN_OFF;
+				break;
+			case LED_COLOR_BLUE:
+				input = BLUE_OFF;
+				break;
+			default:
+				break;
+		}
 	}
 	spin_unlock_irqrestore(&tricolor_led->led_lock, flags);
 	call_oem_rapi_client_streaming_function(tricolor_led->rpc_client, (char*)&input);
