@@ -188,7 +188,7 @@ static int mpu3050_gpio_setup(void) {
 		printk(KERN_ERR "Failed to obtain mpu3050 int GPIO!\n");
 	else
 		printk("mpu3050 int GPIO request!\n");
-	if(machine_is_msm8625_qrd5() ) {
+	if(machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a() ) {
 		if (ARRAY_SIZE(mpu3050_boardinfo_qrd5))
 			i2c_register_board_info(MSM_GSBI1_QUP_I2C_BUS_ID,
 						mpu3050_boardinfo_qrd5,
@@ -313,14 +313,14 @@ static struct i2c_board_info accel_kxtj9_i2c_info[] __initdata = {
 void __init msm7627a_sensor_init(void)
 {
 #ifdef CONFIG_AVAGO_APDS990X
-	if ( machine_is_msm7627a_evb() || machine_is_msm8625_evb() || machine_is_msm8625_qrd5() ) {
+	if ( machine_is_msm7627a_evb() || machine_is_msm8625_evb() || machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
 		pr_info("i2c_register_board_info APDS990X\n");
 		apds990x_setup();
 	}
 #endif
 
 #ifdef CONFIG_MPU_SENSORS_MPU3050
-	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb() || machine_is_msm8625_qrd5()) {
+	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb() || machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
 		pr_info("i2c_register_board_info MPU3050\n");
 		mpu3050_gpio_setup();
 	}
