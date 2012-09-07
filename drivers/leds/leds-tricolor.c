@@ -228,12 +228,12 @@ static void led_brightness_set_flash(struct led_classdev *led_cdev,
 				     enum led_brightness brightness)
 {
 	if(brightness){
-		if(machine_is_msm8625_qrd5())
+		if(machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 			gpio_set_value(qrd5_led_flash_en1, 1);
 		else if(machine_is_msm8625_qrd7())
 			gpio_set_value(qrd7_led_flash_en, 1);
 	} else {
-		if(machine_is_msm8625_qrd5())
+		if(machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 			gpio_set_value(qrd5_led_flash_en1, 0);
 		else if(machine_is_msm8625_qrd7())
 			gpio_set_value(qrd7_led_flash_en, 0);

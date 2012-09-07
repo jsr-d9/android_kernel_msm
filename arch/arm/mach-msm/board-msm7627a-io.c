@@ -762,7 +762,7 @@ static struct msm_gpio tricolor_leds_gpio_cfg_data[] = {
 
 static int tricolor_leds_gpio_setup(void) {
 	int ret = 0;
-	if(machine_is_msm8625_qrd5())
+	if(machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 	{
 		tricolor_leds_gpio_cfg_data[0].gpio_cfg = GPIO_CFG(LED_FLASH_EN1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA);
 	}
