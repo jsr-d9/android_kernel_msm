@@ -50,6 +50,16 @@ int32_t msm_sensor_adjust_frame_lines(struct msm_sensor_ctrl_t *s_ctrl,
 	return 0;
 }
 
+#ifdef CDBG
+#undef CDBG
+#endif
+#ifdef CDBG_HIGH
+#undef CDBG_HIGH
+#endif
+
+#define CDBG(fmt, args...) printk(fmt, ##args)
+#define CDBG_HIGH(fmt, args...) printk(fmt, ##args)
+
 int32_t msm_sensor_write_init_settings(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int32_t rc;
