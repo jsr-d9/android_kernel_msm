@@ -24,8 +24,8 @@ static struct dsi_buf nt35510_rx_buf;
 
 static int mipi_nt35510_bl_ctrl = 0;
 
-#define NT35510_SLEEP_OFF_DELAY 150
-#define NT35510_DISPLAY_ON_DELAY 150
+#define NT35510_SLEEP_OFF_DELAY 10
+#define NT35510_DISPLAY_ON_DELAY 0
 
 /* common setting */
 static char exit_sleep[2] = {0x11, 0x00};
@@ -245,8 +245,8 @@ static struct dsi_cmd_desc nt35510_cmd_display_on_cmds[] = {
 	{DTYPE_GEN_LWRITE, 1, 0, 0, 0, sizeof(cmd26), cmd26},
 	{DTYPE_GEN_LWRITE, 1, 0, 0, 0, sizeof(cmd27), cmd27},
 
-	{DTYPE_DCS_WRITE, 1, 0, 0, 0,	sizeof(exit_sleep), exit_sleep},
-	{DTYPE_DCS_WRITE, 1, 0, 0, 0,	sizeof(display_on), display_on},
+	{DTYPE_DCS_WRITE, 1, 0, 0, NT35510_SLEEP_OFF_DELAY, sizeof(exit_sleep), exit_sleep},
+	{DTYPE_DCS_WRITE, 1, 0, 0, NT35510_DISPLAY_ON_DELAY, sizeof(display_on), display_on},
 
 	{DTYPE_DCS_WRITE1, 1, 0, 0, 0,
 		sizeof(config_MADCTL), config_MADCTL},
@@ -255,7 +255,7 @@ static struct dsi_cmd_desc nt35510_cmd_display_on_cmds[] = {
 };
 
 static struct dsi_cmd_desc nt35510_cmd_display_on_cmds_rotate[] = {
-	{DTYPE_DCS_LWRITE, 1, 0, 0, 0,
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 10,
 		sizeof(cmd19_rotate), cmd19_rotate},
 };
 
@@ -496,6 +496,7 @@ static int mipi_nt35510_lcd_on(struct platform_device *pdev)
 	if (mipi_nt35510_pdata && mipi_nt35510_pdata->rotate_panel)
 		rotate = mipi_nt35510_pdata->rotate_panel();
 
+        pr_debug("%s: mode = %d\n", __func__, mipi->mode);
 	if (mipi->mode == DSI_VIDEO_MODE) {
 		mipi_dsi_cmds_tx(&nt35510_tx_buf,
 			nt35510_video_display_on_cmds,
