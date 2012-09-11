@@ -610,7 +610,7 @@ static int __devinit mipi_nt35510_lcd_probe(struct platform_device *pdev)
 			spin_lock_init(&mipi_nt35510_pdata->bl_spinlock);
 
                 /* PVT use PWM as backlight control method */
-                if(machine_is_msm8625_qrd5() && hw_version_is(3, 0))
+                if((machine_is_msm8625_qrd5() && hw_version_is(3, 0)) || machine_is_msm7x27a_qrd5a())
                         mipi_nt35510_bl_ctrl = 1;
 
 		return 0;
