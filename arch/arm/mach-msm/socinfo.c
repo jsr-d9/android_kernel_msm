@@ -36,6 +36,11 @@ enum {
 	HW_PLATFORM_LIQUID  = 9,
 	/* Dragonboard platform id is assigned as 10 in CDT */
 	HW_PLATFORM_DRAGON	= 10,
+	HW_PLATFORM_8X25_EVB = 0xC,
+	HW_PLATFORM_SKU7  = 0xF,
+	HW_PLATFORM_ALASKA  = 0xA0,
+	HW_PLATFORM_8X25_QRD5 = 0xA2,
+	HW_PLATFORM_7X27_QRD5A = 0xA3,
 	HW_PLATFORM_INVALID
 };
 
@@ -48,7 +53,12 @@ const char *hw_platform[] = {
 	[HW_PLATFORM_SVLTE_SURF] = "SLVTE_SURF",
 	[HW_PLATFORM_MTP] = "MTP",
 	[HW_PLATFORM_LIQUID] = "Liquid",
-	[HW_PLATFORM_DRAGON] = "Dragon"
+	[HW_PLATFORM_DRAGON] = "Dragon",
+	[HW_PLATFORM_8X25_EVB] = "msm8x25_evb",
+	[HW_PLATFORM_SKU7] = "msm7627a_sku7",
+	[HW_PLATFORM_ALASKA] = "msm7627a_skua",
+	[HW_PLATFORM_8X25_QRD5] = "msm8x25_sku5",
+	[HW_PLATFORM_7X27_QRD5A] = "msm7x27_sku5a"
 };
 
 enum {
