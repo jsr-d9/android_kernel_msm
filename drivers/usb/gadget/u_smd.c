@@ -37,6 +37,8 @@
 #define SMD_TX_BUF_SIZE			2048
 
 static struct workqueue_struct *gsmd_wq;
+static struct dentry *dent;
+static int global_atcmd = 0;
 
 #define SMD_N_PORTS	3
 #define CH_OPENED	0
@@ -69,6 +71,7 @@ struct gsmd_port {
 	struct work_struct	push;
 
 	struct list_head	write_pool;
+	struct list_head	sysfs_pool;
 	struct work_struct	pull;
 
 	struct gserial		*port_usb;
@@ -94,6 +97,8 @@ struct gsmd_port {
 	/* pkt counters */
 	unsigned long		nbytes_tomodem;
 	unsigned long		nbytes_tolaptop;
+
+	int			atcmd;
 };
 
 static struct smd_portmaster {
@@ -174,6 +179,10 @@ static void gsmd_start_rx(struct gsmd_port *port)
 
 	if (!port) {
 		pr_err("%s: port is null\n", __func__);
+		return;
+	}
+
+	if (global_atcmd) {
 		return;
 	}
 
@@ -331,24 +340,32 @@ static void gsmd_tx_pull(struct work_struct *w)
 		req->length = smd_read(pi->ch, req->buf, avail);
 
 		spin_unlock_irq(&port->port_lock);
-		ret = usb_ep_queue(in, req, GFP_KERNEL);
-		spin_lock_irq(&port->port_lock);
-		if (ret) {
-			pr_err("%s: usb ep out queue failed"
-					"port:%p, port#%d err:%d\n",
-					__func__, port, port->port_num, ret);
-			/* could be usb disconnected */
-			if (!port->port_usb)
-				gsmd_free_req(in, req);
-			else
-				list_add(&req->list, pool);
-			goto tx_pull_end;
+		if (port->atcmd) {
+			spin_lock_irq(&port->port_lock);
+			list_add(&req->list, &port->sysfs_pool);
+		} else {
+			ret = usb_ep_queue(in, req, GFP_KERNEL);
+			spin_lock_irq(&port->port_lock);
+			if (ret) {
+				pr_err("%s: usb ep out queue failed"
+						"port:%p, port#%d err:%d\n",
+						__func__, port, port->port_num, ret);
+				/* could be usb disconnected */
+				if (!port->port_usb)
+					gsmd_free_req(in, req);
+				else
+					list_add(&req->list, pool);
+				goto tx_pull_end;
+			}
 		}
-
 		port->nbytes_tolaptop += req->length;
 	}
 
 tx_pull_end:
+	if (global_atcmd) {
+		port->atcmd = 1;
+	} else
+		port->atcmd = 0;
 	/* TBD: Check how code behaves on USB bus suspend */
 	if (port->port_usb && smd_read_avail(port->pi->ch) && !list_empty(pool))
 		queue_work(gsmd_wq, &port->pull);
@@ -370,6 +387,13 @@ static void gsmd_read_complete(struct usb_ep *ep, struct usb_request *req)
 	}
 
 	spin_lock(&port->port_lock);
+	if (global_atcmd) {
+		/* do not free it and just add it to the "read pool" */
+		pr_err("%s: reclaim it to the read_pool\n", __func__);
+		list_add_tail(&req->list, &port->read_pool);
+		spin_unlock(&port->port_lock);
+		return;
+	}
 	if (!test_bit(CH_OPENED, &port->pi->flags) ||
 			req->status == -ESHUTDOWN) {
 		spin_unlock(&port->port_lock);
@@ -817,6 +841,7 @@ static int gsmd_port_alloc(int portno, struct usb_cdc_line_coding *coding)
 	INIT_WORK(&port->push, gsmd_rx_push);
 
 	INIT_LIST_HEAD(&port->write_pool);
+	INIT_LIST_HEAD(&port->sysfs_pool);
 	INIT_WORK(&port->pull, gsmd_tx_pull);
 
 	INIT_DELAYED_WORK(&port->connect_work, gsmd_connect_work);
@@ -913,15 +938,196 @@ static const struct file_operations debug_gsmd_ops = {
 	.write = debug_smd_reset_stats,
 };
 
+
+static ssize_t debug_txrx_read(struct file *file, char __user *ubuf,
+			size_t count, loff_t *ppos)
+{
+	struct gsmd_port *port;
+	struct usb_request *req;
+	struct list_head *pool;
+	unsigned long flags;
+	ssize_t n_read = 0;
+
+	port = (struct gsmd_port*)file->private_data;
+	spin_lock_irqsave(&port->port_lock, flags);
+	pool = &port->sysfs_pool;
+	while (!list_empty(pool)) {
+		req = list_entry(pool->next, struct usb_request, list);
+		if (n_read + req->length > count) {
+			spin_unlock_irqrestore(&port->port_lock, flags);
+			return n_read;
+		}
+		list_del(&req->list);
+		spin_unlock_irqrestore(&port->port_lock, flags);
+
+		if (copy_to_user(ubuf + n_read, req->buf, req->length))
+			return -EFAULT;
+		n_read += req->length;
+
+		/* add it to the write_pool */
+		spin_lock_irqsave(&port->port_lock, flags);
+		list_add_tail(&req->list, &port->write_pool);
+	}
+	spin_unlock_irqrestore(&port->port_lock, flags);
+
+	return n_read;
+}
+
+static ssize_t debug_txrx_write(struct file *file, const char __user *ubuf,
+				size_t count, loff_t *ppos)
+{
+	struct gsmd_port *port;
+	unsigned long flags;
+	struct usb_request *req;
+	struct list_head *pool, *queue;
+
+	port = (struct gsmd_port*)file->private_data;
+
+	spin_lock_irqsave(&port->port_lock, flags);
+	pool = &port->read_pool;
+	if (!test_bit(CH_OPENED, &port->pi->flags) || list_empty(pool)) {
+		spin_unlock_irqrestore(&port->port_lock, flags);
+		return -EAGAIN;
+	}
+	req = list_entry(pool->next, struct usb_request, list);
+	list_del(&req->list);
+	spin_unlock_irqrestore(&port->port_lock, flags);
+
+	req->length = min(count, (size_t)(SMD_TX_BUF_SIZE - 1));
+	if (copy_from_user(req->buf, ubuf, req->length))
+		return -EFAULT;
+	req->actual = req->length;
+	req->status = 0;
+	((char*)req->buf)[req->length - 1] = 13;
+
+	spin_lock_irqsave(&port->port_lock, flags);
+	queue = &port->read_queue;
+	list_add_tail(&req->list, queue);
+	queue_work(gsmd_wq, &port->push);
+	spin_unlock_irqrestore(&port->port_lock, flags);
+
+	return req->length;
+}
+
+static int debug_txrx_open(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+
+	return 0;
+}
+
+static const struct file_operations debug_txrx_ops = {
+	.open = debug_txrx_open,
+	.read = debug_txrx_read,
+	.write = debug_txrx_write,
+};
+
+static ssize_t debug_atcmd_read(struct file *file, char __user *ubuf,
+				size_t count, loff_t *ppos)
+{
+	char buf[4];
+	int len;
+
+	len = scnprintf(buf, 4, "%d\n", global_atcmd);
+	return simple_read_from_buffer(ubuf, count, ppos, buf, len);
+}
+
+static ssize_t debug_atcmd_write(struct file *file, const char __user *ubuf,
+				size_t count, loff_t *ppos)
+{
+	int cur_atcmd, i, j;
+	struct gsmd_port *port;
+	struct usb_ep *in, *out;
+	unsigned long flags;
+	static struct dentry* dent_txrx[SMD_N_PORTS];
+	char name[16];
+	char buf[16];
+	int buf_size;
+
+	buf_size = min(count, (sizeof(buf)-1));
+	if (copy_from_user(buf, ubuf, buf_size))
+		return -EFAULT;
+
+	switch (buf[0]) {
+	case '1':
+		cur_atcmd = 1;
+		break;
+	case '0':
+		cur_atcmd = 0;
+		break;
+	default:
+		pr_debug("%s: invalid input value\n", __func__);
+		return -EINVAL;
+	}
+
+	if (cur_atcmd) {
+		if (global_atcmd)
+			return 0;
+		global_atcmd = 1;
+		for (i = 0; i < n_smd_ports; i++) {
+			port = smd_ports[i].port;
+			spin_lock_irqsave(&port->port_lock, flags);
+			if (!port->port_usb) {
+				spin_unlock_irqrestore(&port->port_lock, flags);
+				continue;
+			}
+			in = port->port_usb->in;
+			out = port->port_usb->out;
+			spin_unlock_irqrestore(&port->port_lock, flags);
+			/* usb_ep_fifo_flush(in); */
+			usb_ep_fifo_flush(out);
+			scnprintf(name, 16, "txrx_port%d", i);
+			dent_txrx[i] = debugfs_create_file(name, 0777, dent, port, &debug_txrx_ops);
+			if (!dent_txrx[i]) {
+				/* TODO: error handling */
+				pr_err("%s: failed to create debug file\n", __func__);
+				for (j = i - 1; j >= 0; j--)
+					debugfs_remove(dent_txrx[j]);
+				return 0;
+			}
+			gsmd_notify_modem(port->port_usb, i, 0x3);
+		}
+	} else {
+		if (!global_atcmd)
+			return 0;
+		for (i = 0; i < n_smd_ports; i++)
+			debugfs_remove(dent_txrx[i]);
+
+		global_atcmd = 0;
+		for (i = 0; i < n_smd_ports; i++) {
+			port = smd_ports[i].port;
+			spin_lock_irqsave(&port->port_lock, flags);
+			if (!port->port_usb) {
+				spin_unlock_irqrestore(&port->port_lock, flags);
+				continue;
+			}
+			spin_unlock_irqrestore(&port->port_lock, flags);
+			gsmd_start_rx(port);
+		}
+	}
+
+	return buf_size;
+}
+
+static int debug_atcmd_open(struct inode *inode, struct file *file)
+{
+	return 0;
+}
+
+static const struct file_operations debug_atcmd_ops = {
+	.open = debug_atcmd_open,
+	.read = debug_atcmd_read,
+	.write = debug_atcmd_write,
+};
+
 static void gsmd_debugfs_init(void)
 {
-	struct dentry *dent;
-
 	dent = debugfs_create_dir("usb_gsmd", 0);
 	if (IS_ERR(dent))
 		return;
 
 	debugfs_create_file("status", 0444, dent, 0, &debug_gsmd_ops);
+	debugfs_create_file("at_cmd", 0777, dent, 0, &debug_atcmd_ops);
 }
 #else
 static void gsmd_debugfs_init(void) {}
