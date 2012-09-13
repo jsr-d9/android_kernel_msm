@@ -190,7 +190,6 @@ static struct kobj_attribute mxt_virtual_keys_attr = {
 	},
 	.show = &mxt_virtual_keys_register,
 };
-#endif
 
 static struct attribute *mxt_virtual_key_properties_attrs[] = {
 	&mxt_virtual_keys_attr.attr,
@@ -308,6 +307,50 @@ static const u8 mxt_config_data_qrd5[] = {
 	80, 100, 15, 3,
 };
 
+static const u8 mxt_config_data_qrd5a[] = {
+	/* T6 Object */
+	0, 0, 0, 0, 0, 0,
+	/* T38 Object */
+	21, 0, 3, 0, 0, 0, 0, 0,
+	/* T7 Object */
+	24, 12, 10,
+	/* T8 Object */
+	30, 0, 20, 20, 10, 0, 0, 0, 10, 192,
+	/* T9 Object */
+	131, 0, 0, 18, 11, 0, 16, 70, 2, 1,
+	0, 2, 1, 62, 10, 10, 10, 10, 107, 3,
+	223, 1, 2, 2, 20, 20, 172, 40, 139, 110,
+	10, 15, 0, 0, 0,
+	/* T15 Object */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0,
+	/* T18 Object */
+	0, 0,
+	/* T19 Object */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0,
+	/* T23 Object */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0,
+	/* T25 Object */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0,
+	/* T40 Object */
+	0, 0, 0, 0, 0,
+	/* T42 Object */
+	3, 20, 45, 40, 128, 0, 0, 0,
+	/* T46 Object */
+	0, 2, 16, 16, 0, 0, 0, 0, 0,
+	/* T47 Object */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	/* T48 Object */
+	1, 12, 64, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 6, 6, 0, 0, 100, 4, 64,
+	10, 0, 20, 5, 0, 38, 0, 20, 0, 0,
+	0, 0, 0, 0, 16, 65, 3, 1, 1, 0,
+	10, 10, 10, 0, 0, 15, 15, 154, 58, 145,
+	80, 100, 15, 3,
+};
 static struct mxt_config_info mxt_config_array[] = {
 	{
 		.config		= mxt_config_data,
@@ -875,12 +918,20 @@ void __init qrd7627a_add_io_devices(void)
 	} else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb() ||
 			machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
 		/* Use configuration data for sku5 */
-		if (machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
+		if (machine_is_msm8625_qrd5()) {
 			mxt_config_array[0].config = mxt_config_data_qrd5;
 			mxt_config_array[0].config_length =
 					ARRAY_SIZE(mxt_config_data_qrd5);
 			mxt_platform_data.panel_maxy = 875;
 			mxt_platform_data.need_calibration = true;
+			mxt_vkey_setup();
+		}
+
+		if (machine_is_msm7x27a_qrd5a()) {
+			mxt_config_array[0].config = mxt_config_data_qrd5a;
+			mxt_config_array[0].config_length =
+					ARRAY_SIZE(mxt_config_data_qrd5a);
+			mxt_platform_data.panel_maxy = 875;
 			mxt_vkey_setup();
 		}
 
