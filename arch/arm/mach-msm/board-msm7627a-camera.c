@@ -37,8 +37,8 @@
 #define MOUNT_ANGLE_NOT_CONFIGURED -1
 //for qrd7 camera gpio
 static int camera_gpio_rear_qrd7[] = {93, 23, 30};//PWDN, RESET, DRIVER_PWDN
-static int camera_gpio_front_qrd7[] = {91, 29};//PWDN, RESET
 
+extern int sku3_lcdc_lcd_camera_power_onoff(int on);
 
 #ifdef CONFIG_MSM_CAMERA_V4L2
 static uint32_t camera_off_gpio_table[] = {
@@ -87,9 +87,21 @@ static struct gpio ov7692_cam_req_gpio[] = {
 	{GPIO_SKU1_CAM_VGA_RESET_N, GPIOF_DIR_OUT, "CAM_VGA_RESET"},
 };
 
+static struct gpio ov7692_cam_req_gpio_sku7[] = {
+	{GPIO_SKU7_CAM_VGA_SHDN, GPIOF_DIR_OUT, "CAM_VGA_SHDN"},
+	{GPIO_SKU1_CAM_VGA_RESET_N, GPIOF_DIR_OUT, "CAM_VGA_RESET"},
+};
+
 static struct msm_gpio_set_tbl ov7692_cam_gpio_set_tbl[] = {
 	{GPIO_SKU1_CAM_VGA_SHDN, GPIOF_OUT_INIT_HIGH, 5000},
 	{GPIO_SKU1_CAM_VGA_SHDN, GPIOF_OUT_INIT_LOW, 5000},
+	{GPIO_SKU1_CAM_VGA_RESET_N, GPIOF_OUT_INIT_HIGH, 5000},
+	{GPIO_SKU1_CAM_VGA_RESET_N, GPIOF_OUT_INIT_LOW, 5000},
+};
+
+static struct msm_gpio_set_tbl ov7692_cam_gpio_set_tbl_sku7[] = {
+	{GPIO_SKU7_CAM_VGA_SHDN, GPIOF_OUT_INIT_HIGH, 5000},
+	{GPIO_SKU7_CAM_VGA_SHDN, GPIOF_OUT_INIT_LOW, 5000},
 	{GPIO_SKU1_CAM_VGA_RESET_N, GPIOF_OUT_INIT_HIGH, 5000},
 	{GPIO_SKU1_CAM_VGA_RESET_N, GPIOF_OUT_INIT_LOW, 5000},
 };
@@ -103,8 +115,10 @@ static struct msm_camera_gpio_conf gpio_conf_ov7692 = {
 };
 
 static struct msm_camera_gpio_conf sku7_gpio_conf_ov7692 = {
-	.camera_off_table = camera_off_gpio_table,
-	.camera_on_table = camera_on_gpio_table,
+	.cam_gpio_req_tbl = ov7692_cam_req_gpio_sku7,
+	.cam_gpio_req_tbl_size = ARRAY_SIZE(ov7692_cam_req_gpio_sku7),
+	.cam_gpio_set_tbl = ov7692_cam_gpio_set_tbl_sku7,
+	.cam_gpio_set_tbl_size = ARRAY_SIZE(ov7692_cam_gpio_set_tbl_sku7),
 	.gpio_no_mux = 1,
 };
 #endif
@@ -246,8 +260,8 @@ static struct msm_camera_sensor_flash_data flash_ov7692 = {
 static struct msm_camera_sensor_info msm_camera_sensor_ov7692_data = {
 	.sensor_name	    = "ov7692",
 	.sensor_reset_enable    = 0,
-	.sensor_reset	   = GPIO_SKU1_CAM_VGA_RESET_N,
-	.sensor_pwd	     = GPIO_SKU1_CAM_VGA_SHDN,
+	.sensor_reset	   = GPIO_NOT_CONFIGURED,
+	.sensor_pwd	     = GPIO_NOT_CONFIGURED,
 	.pdata			= &msm_camera_device_data_csi0[0],
 	.flash_data	     = &flash_ov7692,
 	.sensor_platform_info   = &sensor_board_info_ov7692,
@@ -455,6 +469,7 @@ static void __init msm7x27a_init_cam(void)
 			machine_is_msm7625a_ffa() ||
 			machine_is_msm7627a_qrd1() ||
 			machine_is_msm8625_qrd7() ||
+			machine_is_msm7627a_qrd3() ||
 			machine_is_msm8625_evb() ||
 			machine_is_msm8625_qrd5() ||
 			machine_is_msm7x27a_qrd5a() ||
@@ -483,7 +498,7 @@ static void __init msm7x27a_init_cam(void)
 		sensor_board_info_ov8825.cam_vreg = NULL;
 		sensor_board_info_ov8825.num_vreg = 0;
 #endif
-	}else if (machine_is_msm8625_qrd7())
+	}else if (machine_is_msm8625_qrd7() || machine_is_msm7627a_qrd3())
 	{
 		//Add SKU7 specific settings
 #ifdef CONFIG_OV5647
@@ -493,11 +508,15 @@ static void __init msm7x27a_init_cam(void)
 		msm_camera_sensor_ov5647_data.vcm_enable = 0;
 		msm_flash_src_ov5647.flash_sr_type = MSM_CAMERA_FLASH_LED;
 		msm_flash_src_ov5647._fsrc.ext_driver_src.led_en = 96;
+		msm_camera_sensor_ov5647_data.sensor_platform_info->ext_power_ctrl = sku3_lcdc_lcd_camera_power_onoff;
+		sensor_board_info_ov5647.mount_angle = 90;
 #endif
 #ifdef CONFIG_OV7692
-		msm_camera_sensor_ov7692_data.sensor_reset = camera_gpio_front_qrd7[1];
-		msm_camera_sensor_ov7692_data.sensor_pwd = camera_gpio_front_qrd7[0];
+		msm_camera_sensor_ov7692_data.sensor_platform_info->ext_power_ctrl = sku3_lcdc_lcd_camera_power_onoff;
+		msm_camera_sensor_ov7692_data.vcm_pwd = 0;
+		msm_camera_sensor_ov7692_data.vcm_enable = 0;
 		sensor_board_info_ov7692.gpio_conf = &sku7_gpio_conf_ov7692;
+		sensor_board_info_ov7692.mount_angle = 90;
 #endif
 	}else if (machine_is_msm8625_evb())
 	{
@@ -562,6 +581,7 @@ static void __init msm7x27a_init_cam(void)
 	}
 	if (machine_is_msm8625_evb()
 			|| machine_is_msm8625_qrd5()
+			|| machine_is_msm7627a_qrd3()
 			|| machine_is_msm8625_qrd7()
 			|| machine_is_msm7x27a_qrd5a())
 		*(int *) msm7x27a_device_clkctl.dev.platform_data = 1;
@@ -1453,18 +1473,6 @@ void __init msm7627a_camera_init(void)
 
 	pr_debug("msm7627a_camera_init Entered\n");
 
-	if (machine_is_msm7627a_qrd3() || machine_is_msm8625_qrd7()) {
-		ov7692_cam_req_gpio[0].gpio =
-			GPIO_SKU7_CAM_VGA_SHDN;
-		ov7692_cam_gpio_set_tbl[0].gpio = GPIO_SKU7_CAM_VGA_SHDN;
-		ov7692_cam_gpio_set_tbl[1].gpio = GPIO_SKU7_CAM_VGA_SHDN;
-
-		msm_camera_sensor_ov5647_data.sensor_pwd =
-			GPIO_SKU7_CAM_5MP_SHDN_N;
-		msm_camera_sensor_ov5647_data.sensor_reset =
-			GPIO_SKU7_CAM_5MP_CAMIF_RESET;
-	}
-
 	/* LCD and camera power (VREG & LDO) init */
 	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()) {
 #ifndef CONFIG_MSM_CAMERA_V4L2
@@ -1473,8 +1481,6 @@ void __init msm7627a_camera_init(void)
 		evb_camera_gpio_cfg();
 	}else if(machine_is_msm8625_qrd5()|| machine_is_msm7x27a_qrd5a()){
 		sku5_camera_gpio_cfg();
-	}else if(machine_is_msm7627a_qrd3()|| machine_is_msm8625_qrd7()){
-		sku7_camera_gpio_cfg();
 	}
 
 #ifndef CONFIG_MSM_CAMERA_V4L2

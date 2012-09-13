@@ -27,6 +27,8 @@
 #include <mach/rpc_pmapp.h>
 #include "devices.h"
 #include "board-msm7627a.h"
+#include <linux/kernel.h>
+#include <linux/module.h>
 
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
 #define MSM_FB_SIZE		0x4BF000
@@ -215,8 +217,14 @@ int sku3_lcdc_lcd_camera_power_onoff(int on)
 {
 	int rc = 0;
 	u32 socinfo = socinfo_get_platform_type();
+	static int refcount = 0;
 
 	if (on) {
+		if (refcount > 0)
+		{
+			refcount++;
+			return rc;
+		}
 		if (socinfo == 0x0B)
 			gpio_set_value_cansleep(SKU3_LCDC_LCD_CAMERA_LDO_1V8,
 				1);
@@ -231,7 +239,14 @@ int sku3_lcdc_lcd_camera_power_onoff(int on)
 		if (rc)
 			pr_err("%s: could not enable regulators: %d\n",
 				__func__, rc);
+		else
+			refcount++;
 	} else {
+		if (refcount > 1)
+		{
+			refcount--;
+			return rc;
+		}
 		if (socinfo == 0x0B)
 			gpio_set_value_cansleep(SKU3_LCDC_LCD_CAMERA_LDO_1V8,
 				0);
@@ -246,10 +261,13 @@ int sku3_lcdc_lcd_camera_power_onoff(int on)
 		if (rc)
 			pr_err("%s: could not disable regulators: %d\n",
 				__func__, rc);
+		else
+			refcount--;
 	}
 
 	return rc;
 }
+EXPORT_SYMBOL(sku3_lcdc_lcd_camera_power_onoff);
 
 static int sku3_lcdc_power_save(int on)
 {
