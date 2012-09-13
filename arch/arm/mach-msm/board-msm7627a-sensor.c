@@ -327,7 +327,7 @@ void __init msm7627a_sensor_init(void)
 #endif
 
 #ifdef CONFIG_BOSCH_BMA250
-	if (machine_is_msm8625_qrd7()) {
+	if (machine_is_msm8625_qrd7() || machine_is_msm7627a_qrd3()) {
 		pr_info("i2c_register_board_info BMA250 ACC\n");
 		i2c_register_board_info(MSM_GSBI1_QUP_I2C_BUS_ID,
 					bma250_i2c_info,
@@ -336,7 +336,7 @@ void __init msm7627a_sensor_init(void)
 #endif
 
 #ifdef CONFIG_INPUT_LTR502
-	if (machine_is_msm8625_qrd7()) {
+	if (machine_is_msm8625_qrd7() || machine_is_msm7627a_qrd3()) {
 		pr_info("i2c_register_board_info LTR502\n");
 		ltr502_light_gpio_setup();
 		i2c_register_board_info(MSM_GSBI1_QUP_I2C_BUS_ID,
@@ -346,7 +346,7 @@ void __init msm7627a_sensor_init(void)
 #endif
 
 #ifdef CONFIG_SENSORS_AK8975
-	if (machine_is_msm8625_qrd7()) {
+	if (machine_is_msm8625_qrd7() || machine_is_msm7627a_qrd3()) {
 		pr_info("i2c_register_board_info AKM8975\n");
 		akm_gpio_setup();
 		akm_platform_data_8975.gpio_DRDY = 18;
