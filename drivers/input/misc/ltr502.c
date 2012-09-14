@@ -730,7 +730,7 @@ static int ltr502_i2c_probe(struct i2c_client *client,
 
 	/* ext_2v8 control */
 	if (!reg_ext_2v8) {
-		reg_ext_2v8 = regulator_get(NULL, "ext_2v8");
+		reg_ext_2v8 = regulator_get(NULL, "ext_2p85v");
 		if (IS_ERR(reg_ext_2v8)) {
 			pr_err("'%s' regulator not found, rc=%ld\n",
 				"ext_2v8", IS_ERR(reg_ext_2v8));
