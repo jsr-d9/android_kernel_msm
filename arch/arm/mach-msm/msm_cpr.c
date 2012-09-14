@@ -29,6 +29,7 @@
 #include <linux/iopoll.h>
 #include <linux/delay.h>
 #include <linux/regulator/consumer.h>
+#include <linux/spinlock.h>
 
 #include <mach/irqs.h>
 
@@ -85,7 +86,6 @@ struct msm_cpr {
 	uint32_t cur_Vmin;
 	uint32_t cur_Vmax;
 	uint32_t prev_volt_uV;
-	struct mutex cpr_mutex;
 	spinlock_t cpr_lock;
 	struct regulator *vreg_cx;
 	const struct msm_cpr_config *config;
