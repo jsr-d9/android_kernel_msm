@@ -1256,13 +1256,14 @@ static irqreturn_t msm_otg_irq(int irq, void *data)
 		goto out;
 	}
 
-	/* Return immediately if instead of ID pin, USER controls mode switch */
-	if (dev->pdata->otg_mode == OTG_USER_CONTROL)
-		return IRQ_NONE;
-
-
 	otgsc = readl(USB_OTGSC);
 	sts = readl(USB_USBSTS);
+
+	/* Return immediately if instead of ID pin, USER controls mode switch */
+	if (dev->pdata->otg_mode == OTG_USER_CONTROL) {
+		writel(otgsc, USB_OTGSC);
+		return IRQ_NONE;
+	}
 
 	sts_mask = (otgsc & OTGSC_INTR_MASK) >> 8;
 
