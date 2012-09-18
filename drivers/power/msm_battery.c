@@ -342,13 +342,13 @@ static void update_charger_type(u32 charger_hardware)
 		msm_battery_info.current_charger_src = USB_CHG;
 		break;
 	case CHARGER_TYPE_USB_WALL:
-		pr_debug("BATT: usb wall changer inserted\n");
+		pr_debug("BATT: usb wall charger inserted\n");
 
 		msm_battery_info.current_psy = &msm_psy_ac;
 		msm_battery_info.current_charger_src = AC_CHG;
 		break;
 	case CHARGER_TYPE_USB_UNKNOWN:
-		pr_debug("BATT: unknown changer inserted\n");
+		pr_debug("BATT: unknown charger inserted\n");
 
 		msm_battery_info.current_psy = &msm_psy_unknown;
 		msm_battery_info.current_charger_src = UNKNOWN_CHG;
