@@ -747,17 +747,29 @@ static struct platform_device hs_pdev = {
 #define FT5X06_IRQ_GPIO		48
 #define FT5X06_RESET_GPIO	26
 
+#define FT5X06_IRQ_GPIO_QPR		122
+#define FT5X06_RESET_GPIO_QPR	26
+
 static ssize_t
 ft5x06_virtual_keys_register(struct kobject *kobj,
 			     struct kobj_attribute *attr,
 			     char *buf)
 {
-	return snprintf(buf, 200,
-	__stringify(EV_KEY) ":" __stringify(KEY_MENU)  ":40:510:80:60"
-	":" __stringify(EV_KEY) ":" __stringify(KEY_HOME)   ":120:510:80:60"
-	":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH) ":200:510:80:60"
-	":" __stringify(EV_KEY) ":" __stringify(KEY_BACK)   ":280:510:80:60"
-	"\n");
+	if (machine_is_msm8625q_skud()) {
+		return snprintf(buf, 200,
+			__stringify(EV_KEY) ":" __stringify(KEY_MENU)  ":67:1000:135:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_HOME)   ":202:1000:135:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH) ":337:1000:135:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_BACK)   ":472:1000:135:60"
+			"\n");
+	} else {
+		return snprintf(buf, 200,
+			__stringify(EV_KEY) ":" __stringify(KEY_MENU)  ":40:510:80:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_HOME)   ":120:510:80:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH) ":200:510:80:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_BACK)   ":280:510:80:60"
+			"\n");
+	}
 }
 
 static struct kobj_attribute ft5x06_virtual_keys_attr = {
@@ -779,12 +791,47 @@ static struct attribute_group ft5x06_virtual_key_properties_attr_group = {
 
 struct kobject *ft5x06_virtual_key_properties_kobj;
 
+static struct regulator_bulk_data regs_ft5x06[] = {
+	{ .supply = "ldo12", .min_uV = 2700000, .max_uV = 3300000 },
+	{ .supply = "smps3", .min_uV = 1800000, .max_uV = 1800000 },
+};
+
+static int ft5x06_ts_power_on(bool on)
+{
+	int rc;
+
+	rc = regulator_bulk_get(NULL, ARRAY_SIZE(regs_ft5x06), regs_ft5x06);
+	if (rc) {
+		printk("%s: could not get regulators: %d\n",
+				__func__, rc);
+	}
+
+	rc = regulator_bulk_set_voltage(ARRAY_SIZE(regs_ft5x06), regs_ft5x06);
+	if (rc) {
+		printk("%s: could not set voltages: %d\n",
+				__func__, rc);
+	}
+
+	rc = on ?
+		regulator_bulk_enable(ARRAY_SIZE(regs_ft5x06), regs_ft5x06) :
+		regulator_bulk_disable(ARRAY_SIZE(regs_ft5x06), regs_ft5x06);
+
+	if (rc)
+		pr_err("%s: could not %sable regulators: %d\n",
+				__func__, on ? "en" : "dis", rc);
+	else
+		msleep(50);
+
+	return rc;
+}
+
 static struct ft5x06_ts_platform_data ft5x06_platformdata = {
 	.x_max		= 320,
 	.y_max		= 480,
 	.reset_gpio	= FT5X06_RESET_GPIO,
 	.irq_gpio	= FT5X06_IRQ_GPIO,
 	.irqflags	= IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+	.power_on	= ft5x06_ts_power_on,
 };
 
 static struct i2c_board_info ft5x06_device_info[] __initdata = {
@@ -799,19 +846,27 @@ static void __init ft5x06_touchpad_setup(void)
 {
 	int rc;
 
-	rc = gpio_tlmm_config(GPIO_CFG(FT5X06_IRQ_GPIO, 0,
+	if (machine_is_msm8625q_skud()) {
+		ft5x06_platformdata.irq_gpio = FT5X06_IRQ_GPIO_QPR;
+		ft5x06_platformdata.reset_gpio = FT5X06_RESET_GPIO_QPR;
+		ft5x06_platformdata.x_max = 540;
+		ft5x06_platformdata.y_max = 960;
+		ft5x06_device_info[0].irq = MSM_GPIO_TO_INT(FT5X06_IRQ_GPIO_QPR);
+	}
+
+	rc = gpio_tlmm_config(GPIO_CFG(ft5x06_platformdata.irq_gpio, 0,
 			GPIO_CFG_INPUT, GPIO_CFG_PULL_UP,
 			GPIO_CFG_8MA), GPIO_CFG_ENABLE);
 	if (rc)
 		pr_err("%s: gpio_tlmm_config for %d failed\n",
-			__func__, FT5X06_IRQ_GPIO);
+			__func__, ft5x06_platformdata.irq_gpio);
 
-	rc = gpio_tlmm_config(GPIO_CFG(FT5X06_RESET_GPIO, 0,
+	rc = gpio_tlmm_config(GPIO_CFG(ft5x06_platformdata.reset_gpio, 0,
 			GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN,
 			GPIO_CFG_8MA), GPIO_CFG_ENABLE);
 	if (rc)
 		pr_err("%s: gpio_tlmm_config for %d failed\n",
-			__func__, FT5X06_RESET_GPIO);
+			__func__, ft5x06_platformdata.reset_gpio);
 
 	ft5x06_virtual_key_properties_kobj =
 			kobject_create_and_add("board_properties", NULL);
@@ -1033,7 +1088,7 @@ void __init qrd7627a_add_io_devices(void)
 		i2c_register_board_info(MSM_GSBI1_QUP_I2C_BUS_ID,
 					mxt_device_info,
 					ARRAY_SIZE(mxt_device_info));
-	} else if (machine_is_msm7627a_qrd3() || machine_is_msm8625_qrd7()) {
+	} else if (machine_is_msm7627a_qrd3() || machine_is_msm8625_qrd7() || machine_is_msm8625q_skud()) {
 		ft5x06_touchpad_setup();
 	}
 
