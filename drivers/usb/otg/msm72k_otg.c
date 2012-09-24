@@ -1243,7 +1243,7 @@ void msm_otg_set_vbus_state(int online)
 static irqreturn_t msm_otg_irq(int irq, void *data)
 {
 	struct msm_otg *dev = data;
-	u32 otgsc, sts, pc, sts_mask;
+	u32 otgsc, sts, pc;
 	irqreturn_t ret = IRQ_HANDLED;
 	int work = 0;
 	enum usb_otg_state state;
@@ -1256,21 +1256,24 @@ static irqreturn_t msm_otg_irq(int irq, void *data)
 		goto out;
 	}
 
+	/* Return immediately if instead of ID pin, USER controls mode switch */
+	if (dev->pdata->otg_mode == OTG_USER_CONTROL)
+		return IRQ_NONE;
+
+
 	otgsc = readl(USB_OTGSC);
 	sts = readl(USB_USBSTS);
 
-	/* Return immediately if instead of ID pin, USER controls mode switch */
-	if (dev->pdata->otg_mode == OTG_USER_CONTROL) {
-		writel(otgsc, USB_OTGSC);
-		return IRQ_NONE;
-	}
-
-	sts_mask = (otgsc & OTGSC_INTR_MASK) >> 8;
-
-	if (!((otgsc & sts_mask) || (sts & STS_PCI))) {
+	/* At times during USB disconnect, hardware generates 1MSIS interrupt
+	 * during PHY reset, which leads to irq not handled error as IRQ_NONE
+	 * is notified. To workaround this issue, check for all the
+	 * OTG_INTR_STS_MASK bits and if set, clear them and notify IRQ_HANDLED.
+	 */
+	if (!((otgsc & OTGSC_INTR_STS_MASK) || (sts & STS_PCI))) {
 		ret = IRQ_NONE;
 		goto out;
 	}
+	writel_relaxed(otgsc, USB_OTGSC);
 
 	spin_lock_irqsave(&dev->lock, flags);
 	state = dev->phy.state;
@@ -1292,10 +1295,8 @@ static irqreturn_t msm_otg_irq(int irq, void *data)
 			set_bit(A_BUS_REQ, &dev->inputs);
 			clear_bit(ID, &dev->inputs);
 		}
-		writel(otgsc, USB_OTGSC);
 		work = 1;
 	} else if (otgsc & OTGSC_BSVIS) {
-		writel(otgsc, USB_OTGSC);
 		/* BSV interrupt comes when operating as an A-device
 		 * (VBUS on/off).
 		 * But, handle BSV when charger is removed from ACA in ID_A
@@ -1313,7 +1314,6 @@ static irqreturn_t msm_otg_irq(int irq, void *data)
 		work = 1;
 	} else if (otgsc & OTGSC_DPIS) {
 		pr_debug("DPIS detected\n");
-		writel(otgsc, USB_OTGSC);
 		set_bit(A_SRP_DET, &dev->inputs);
 		set_bit(A_BUS_REQ, &dev->inputs);
 		work = 1;
