@@ -1025,17 +1025,63 @@ static void __init qrd7627a_init_early(void)
 }
 
 #ifdef CONFIG_MSM_AMSS_ENHANCE_DEBUG
+#define TASK_OFFSET_SEND(member, name)		\
+	do {					\
+		input.extension.len = 2;	\
+		input.extension.data[0] = (uint32_t)TASK_STRUCT_TAG; \
+		input.extension.data[1] = offsetof(struct task_struct, member); \
+		input.address = (uint32_t)__virt_to_phys((unsigned long)&init_task); \
+		input.size = sizeof(struct task_struct); \
+		strncpy(input.file_name, name, NZI_ITEM_FILE_NAME_LENGTH); \
+		input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0; \
+		send_modem_logaddr(&input); \
+	} while (0)
+
 static int __init qrd7627a_logbuf_init(void)
 {
 	nzi_buf_item_type input;
 	extern char __log_buf[];
+	extern unsigned long totalram_pages;
+	extern atomic_long_t vm_stat[];
 
+#ifdef CONFIG_PRINTK
+	/* send the kernel log address */
 	input.extension.len = 0;
 	input.address = (uint32_t)__virt_to_phys((unsigned long)__log_buf);
 	input.size = (1 << CONFIG_LOG_BUF_SHIFT);
 	strncpy(input.file_name, "dmesg", NZI_ITEM_FILE_NAME_LENGTH);
 	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
-	return send_modem_logaddr(&input);
+	send_modem_logaddr(&input);
+#endif
+
+	/* ******struct task_struct part ******/
+	TASK_OFFSET_SEND(tasks, "tasks_of");
+	TASK_OFFSET_SEND(thread_group, "tg_of");
+	TASK_OFFSET_SEND(mm, "mm_of");
+	TASK_OFFSET_SEND(comm, "comm_of");
+	TASK_OFFSET_SEND(pid, "pid_of");
+	TASK_OFFSET_SEND(tgid, "tgid_of");
+	/* ******struct task_struct end ******/
+
+	/* totalram_pages */
+	input.extension.len = 1;
+	input.extension.data[0] = (uint32_t)MEM_INFO_TAG;
+	input.address = (uint32_t)__virt_to_phys((unsigned long)&totalram_pages);
+	input.size = sizeof(totalram_pages);
+	strncpy(input.file_name, "totalram", NZI_ITEM_FILE_NAME_LENGTH);
+	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
+	send_modem_logaddr(&input);
+
+	/* vm_stat[vm_stat[NR_VM_ZONE_STAT_ITEMS]; */
+	input.extension.len = 1;
+	input.extension.data[0] = (uint32_t)MEM_INFO_TAG;
+	input.address = (uint32_t)__virt_to_phys((unsigned long)vm_stat);
+	input.size = sizeof(vm_stat);
+	strncpy(input.file_name, "vm_stat", NZI_ITEM_FILE_NAME_LENGTH);
+	input.file_name[NZI_ITEM_FILE_NAME_LENGTH - 1] = 0;
+	send_modem_logaddr(&input);
+
+	return 0;
 }
 late_initcall(qrd7627a_logbuf_init);
 #endif
