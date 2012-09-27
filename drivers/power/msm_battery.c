@@ -474,6 +474,8 @@ void msm_battery_update_psy_status(void)
 
 	if (charger_status == CHARGER_STATUS_NULL) {
 		msm_battery_info.psy_status = POWER_SUPPLY_STATUS_DISCHARGING;
+	} else if (battery_status == BATTERY_STATUS_NULL) {
+		msm_battery_info.psy_status = POWER_SUPPLY_STATUS_UNKNOWN;
 	} else if (battery_capacity == 100) {
 		msm_battery_info.psy_status = POWER_SUPPLY_STATUS_FULL;
 	} else {
