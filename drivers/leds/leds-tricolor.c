@@ -255,6 +255,8 @@ static int tricolor_led_probe(struct platform_device *pdev)
 	}
 	memset(tricolor_led, 0, sizeof(struct tricolor_led_data));
 
+	spin_lock_init(&tricolor_led->led_lock);
+
 	/* initialize tricolor_led->pc_client */
 	tricolor_led->rpc_client = oem_rapi_client_init();
 	ret = IS_ERR(tricolor_led->rpc_client);

@@ -971,6 +971,7 @@ static int __devinit apds990x_probe(struct i2c_client *client,
 	printk("enable = %x\n", data->enable);
 
 	mutex_init(&data->update_lock);
+	spin_lock_init(&data->wq_lock);
 
 	INIT_DELAYED_WORK(&data->dwork, apds990x_work_handler);
 	INIT_DELAYED_WORK(&data->als_dwork, apds990x_als_polling_work_handler);
