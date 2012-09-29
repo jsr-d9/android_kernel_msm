@@ -173,6 +173,7 @@ void request_suspend_state(suspend_state_t new_state)
 	unsigned long irqflags;
 	int old_sleep;
 
+	mutex_lock(&early_suspend_lock);
 	spin_lock_irqsave(&state_lock, irqflags);
 	old_sleep = state & SUSPEND_REQUESTED;
 	if (debug_mask & DEBUG_USER_STATE) {
@@ -198,6 +199,7 @@ void request_suspend_state(suspend_state_t new_state)
 	}
 	requested_suspend_state = new_state;
 	spin_unlock_irqrestore(&state_lock, irqflags);
+	mutex_unlock(&early_suspend_lock);
 }
 
 suspend_state_t get_suspend_state(void)
