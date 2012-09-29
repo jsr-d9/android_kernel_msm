@@ -3993,6 +3993,75 @@ exit:
 	return rc;
 }
 
+/*
+ * Work around of the unavailability of a power_reset functionality in SD cards
+ * by turning the OFF & back ON the regulators supplying the SD card.
+ */
+void msmsdcc_hw_reset(struct mmc_host *mmc)
+{
+	struct mmc_card *card = mmc->card;
+	struct msmsdcc_host *host = mmc_priv(mmc);
+	int rc;
+
+	pr_warn("%s: issue a hw reset now\n",
+					mmc_hostname(host->mmc));
+	/* Write-protection bits would be lost on a hardware reset in emmc */
+	if (!card || !mmc_card_sd(card))
+		return;
+
+	if (host->plat->translate_vdd && !host->sdio_gpio_lpm && !host->plat->vreg_data) {
+		rc = host->plat->translate_vdd(mmc_dev(mmc), 0);
+		if (rc) {
+			pr_err("%s: Failed to disable vdd\n",
+					mmc_hostname(host->mmc));
+			BUG_ON(rc);
+		}
+
+		/* 10ms delay for the supply to reach the desired voltage level */
+		usleep_range(10000, 12000);
+
+		rc = host->plat->translate_vdd(mmc_dev(mmc), 1);
+		if (rc) {
+			pr_err("%s: Failed to enable vdd\n",
+					mmc_hostname(host->mmc));
+			BUG_ON(rc);
+		}
+
+		/* 10ms delay for the supply to reach the desired voltage level */
+		usleep_range(10000, 12000);
+	} else {
+		/*
+		 * Continuing on failing to disable regulator would lead to a panic
+		 * anyway, since the commands would fail and console would be flooded
+		 * with prints, eventually leading to a watchdog bark
+		 */
+		rc = msmsdcc_setup_vreg(host, false, false);
+		if (rc) {
+			pr_err("%s: %s disable regulator: failed: %d\n",
+			       mmc_hostname(mmc), __func__, rc);
+			BUG_ON(rc);
+		}
+
+		/* 10ms delay for the supply to reach the desired voltage level */
+		usleep_range(10000, 12000);
+
+		/*
+		 * Continuing on failing to enable regulator would lead to a panic
+		 * anyway, since the commands would fail and console would be flooded
+		 * with prints, eventually leading to a watchdog bark
+		 */
+		rc = msmsdcc_setup_vreg(host, true, false);
+		if (rc) {
+			pr_err("%s: %s enable regulator: failed: %d\n",
+			       mmc_hostname(mmc), __func__, rc);
+			BUG_ON(rc);
+		}
+
+		/* 10ms delay for the supply to reach the desired voltage level */
+		usleep_range(10000, 12000);
+	}
+}
+
 static const struct mmc_host_ops msmsdcc_ops = {
 	.enable		= msmsdcc_enable,
 	.disable	= msmsdcc_disable,
