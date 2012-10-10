@@ -346,7 +346,7 @@ void __init msm7627a_sensor_init(void)
 #endif
 
 #ifdef CONFIG_SENSORS_AK8975
-	if (machine_is_msm8625_qrd7() || machine_is_msm7627a_qrd3()) {
+	if (machine_is_msm8625_qrd7() || machine_is_msm7627a_qrd3() || machine_is_msm8625q_skud()) {
 		pr_info("i2c_register_board_info AKM8975\n");
 		akm_gpio_setup();
 		akm_platform_data_8975.gpio_DRDY = 18;
