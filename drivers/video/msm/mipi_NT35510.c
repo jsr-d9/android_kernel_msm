@@ -44,10 +44,10 @@ static char cmd0[6] = {
 	0x08, 0x01,
 };
 static char cmd1[4] = {
-	0xBC, 0x00, 0xA0, 0x00,
+        0xBC, 0x00, 0x80, 0x00,
 };
 static char cmd2[4] = {
-	0xBD, 0x00, 0xA0, 0x00,
+        0xBD, 0x00, 0x80, 0x00,
 };
 static char cmd3[3] = {
 	0xBE, 0x00, 0x79,
@@ -214,6 +214,11 @@ static char cmd26[6] = {
 static char cmd27[2] = {
 	0x35, 0x00,
 };
+static char cmd28[12] = {
+        0xF9, 0x0A, 0x00, 0x0E,
+        0x1F, 0x37, 0x55, 0x6E,
+        0x6E, 0x46, 0x28, 0x0E,
+};
 static char config_MADCTL[2] = {0x36, 0x00};
 static struct dsi_cmd_desc nt35510_cmd_display_on_cmds[] = {
 	{DTYPE_GEN_LWRITE, 1, 0, 0, 0, sizeof(cmd0), cmd0},
@@ -244,6 +249,7 @@ static struct dsi_cmd_desc nt35510_cmd_display_on_cmds[] = {
 	{DTYPE_GEN_LWRITE, 1, 0, 0, 0, sizeof(cmd25), cmd25},
 	{DTYPE_GEN_LWRITE, 1, 0, 0, 0, sizeof(cmd26), cmd26},
 	{DTYPE_GEN_LWRITE, 1, 0, 0, 0, sizeof(cmd27), cmd27},
+	{DTYPE_GEN_LWRITE, 1, 0, 0, 0, sizeof(cmd28), cmd28},
 
 	{DTYPE_DCS_WRITE, 1, 0, 0, NT35510_SLEEP_OFF_DELAY, sizeof(exit_sleep), exit_sleep},
 	{DTYPE_DCS_WRITE, 1, 0, 0, NT35510_DISPLAY_ON_DELAY, sizeof(display_on), display_on},
@@ -264,10 +270,10 @@ static char video0[6] = {
 	0x08, 0x01,
 };
 static char video1[4] = {
-	0xBC, 0x00, 0xA0, 0x00,
+        0xBC, 0x00, 0x80, 0x00,
 };
 static char video2[4] = {
-	0xBD, 0x00, 0xA0, 0x00,
+        0xBD, 0x00, 0x80, 0x00,
 };
 static char video3[3] = {
 	0xBE, 0x00, 0x79,
