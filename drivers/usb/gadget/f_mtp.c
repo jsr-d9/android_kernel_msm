@@ -806,6 +806,11 @@ static void receive_file_work(struct work_struct *data)
 				 * sizes > 4 gig
 				 */
 				DBG(cdev, "got short packet\n");
+				/*TODO:
+				 *when cancel  MTP file transfer,the kernel got a short packet
+				 *it is better to give MTP server a prompt,so that it can 
+				 *do further operation*/
+				r = -EBADFD;
 				count = 0;
 			}
 
