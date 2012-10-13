@@ -307,7 +307,13 @@ static struct prod_rev_map_t prod_rev_map[] = {
 	{MPU_SILICON_REV_B6, 0},	/* 23 B6 */
 	{MPU_SILICON_REV_B6, 0},	/* 24 |  */
 	{MPU_SILICON_REV_B6, 0},	/* 25 |  */
-	{MPU_SILICON_REV_B6, 131},	/* 26 V  (B6/A11) */
+	{MPU_SILICON_REV_B6, 131},	/* 26 |  (B6/A??) */
+	{MPU_SILICON_REV_B6, 0},	/* 27 |  */
+	{MPU_SILICON_REV_B6, 0},	/* 28 |  */
+	{MPU_SILICON_REV_B6, 0},	/* 29 |  */
+	{MPU_SILICON_REV_B6, 0},	/* 30 |  */
+	{MPU_SILICON_REV_B6, 0},	/* 31 |  */
+	{MPU_SILICON_REV_B6, 131},	/* 32 |  */
 };
 
 /**
@@ -329,13 +335,17 @@ static int inv_get_silicon_rev_mpu3050(
 		struct mldl_cfg *mldl_cfg, void *mlsl_handle)
 {
 	int result;
+	struct mpu_chip_info *mpu_chip_info = mldl_cfg->mpu_chip_info;
+
+#if 0 // suppressed product revision check, hardcoded to revision 26
 	unsigned char index = 0x00;
 	unsigned char bank =
 	    (BIT_PRFTCH_EN | BIT_CFG_USER_BANK | MPU_MEM_OTP_BANK_0);
 	unsigned short mem_addr = ((bank << 8) | 0x06);
-	struct mpu_chip_info *mpu_chip_info = mldl_cfg->mpu_chip_info;
+	//struct mpu_chip_info *mpu_chip_info = mldl_cfg->mpu_chip_info;
 
-	result = inv_serial_read(mlsl_handle, mldl_cfg->mpu_chip_info->addr,
+	//result = inv_serial_read(mlsl_handle, mldl_cfg->mpu_chip_info->addr,
+	result = inv_serial_read(mlsl_handle, mpu_chip_info->addr,
 				 MPUREG_PRODUCT_ID, 1,
 				 &mpu_chip_info->product_id);
 	if (result) {
@@ -354,7 +364,8 @@ static int inv_get_silicon_rev_mpu3050(
 
 	/* clean the prefetch and cfg user bank bits */
 	result = inv_serial_single_write(
-		mlsl_handle, mldl_cfg->mpu_chip_info->addr,
+		//mlsl_handle, mldl_cfg->mpu_chip_info->addr,
+		mlsl_handle, mpu_chip_info->addr,
 		MPUREG_BANK_SEL, 0);
 	if (result) {
 		LOG_RESULT_LOCATION(result);
@@ -376,7 +387,21 @@ static int inv_get_silicon_rev_mpu3050(
 			 " - unsupported non production part.\n");
 		return INV_ERROR_INVALID_MODULE;
 	}
+#else
+	result = inv_serial_read(mlsl_handle, mpu_chip_info->addr,
+				 MPUREG_PRODUCT_ID, 1,
+				 &mpu_chip_info->product_id);
+	if (result) {
+		LOG_RESULT_LOCATION(result);
+		return result;
+	}
+	mpu_chip_info->product_id &= 0xF;
 
+	mpu_chip_info->product_revision = prod_rev_map[26].silicon_rev;
+	mpu_chip_info->product_revision = 26;
+	mpu_chip_info->silicon_revision = MPU_SILICON_REV_B6;
+	mpu_chip_info->gyro_sens_trim = 131;
+#endif
 	return result;
 }
 #define inv_get_silicon_rev inv_get_silicon_rev_mpu3050
