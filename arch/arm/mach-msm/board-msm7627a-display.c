@@ -532,7 +532,10 @@ static int msm_fb_detect_panel(const char *name)
 			machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
 		if (!strncmp(name, "mipi_cmd_nt35510_wvga", 21))
 			ret = 0;
-	}
+	} else if (machine_is_msm8625q_skud()) {
+		if (!strncmp(name, "mipi_video_hx8389b_qhd", 22))
+                        ret = 0;
+        }
 
 #if !defined(CONFIG_FB_MSM_LCDC_AUTO_DETECT) && \
 	!defined(CONFIG_FB_MSM_MIPI_PANEL_AUTO_DETECT) && \
@@ -739,6 +742,19 @@ static struct platform_device mipi_dsi_NT35510_panel_device = {
 	}
 };
 
+static struct msm_panel_common_pdata mipi_hx8389b_pdata = {
+	.backlight    = evb_backlight_control,
+	.rotate_panel = NULL,
+};
+
+static struct platform_device mipi_dsi_hx8389b_panel_device = {
+	.name = "mipi_hx8389b",
+	.id   = 0,
+	.dev  = {
+		.platform_data = &mipi_hx8389b_pdata,
+	}
+};
+
 static struct msm_panel_common_pdata mipi_NT35516_pdata = {
 	.backlight = evb_backlight_control,
 };
@@ -778,6 +794,11 @@ static struct platform_device *evb_fb_devices[] __initdata = {
 	&mipi_dsi_NT35516_panel_device,
 };
 
+static struct platform_device *skud_fb_devices[] __initdata = {
+	&msm_fb_device,
+	&mipi_dsi_hx8389b_panel_device,
+};
+
 void __init msm_msm7627a_allocate_memory_regions(void)
 {
 	void *addr;
@@ -786,7 +807,8 @@ void __init msm_msm7627a_allocate_memory_regions(void)
 	if (machine_is_msm7625a_surf() || machine_is_msm7625a_ffa())
 		fb_size = MSM7x25A_MSM_FB_SIZE;
 	else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-						|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
+                        || machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()
+                        || machine_is_msm8625q_skud())
 		fb_size = MSM8x25_MSM_FB_SIZE;
 	else
 		fb_size = MSM_FB_SIZE;
@@ -1000,6 +1022,27 @@ static int msm_fb_dsi_client_qrd3_reset(void)
 	return rc;
 }
 
+#define GPIO_SKUD_LCD_BRDG_RESET_N	78
+
+static unsigned skud_mipi_dsi_gpio[] = {
+	GPIO_CFG(GPIO_SKUD_LCD_BRDG_RESET_N, 0, GPIO_CFG_OUTPUT,
+			GPIO_CFG_NO_PULL,
+			GPIO_CFG_2MA), /* GPIO_SKUD_LCD_BRDG_RESET_N */
+};
+
+static int msm_fb_dsi_client_skud_reset(void)
+{
+	int rc = 0;
+
+	rc = gpio_request(GPIO_SKUD_LCD_BRDG_RESET_N, "skud_lcd_brdg_reset_n");
+	if (rc < 0) {
+		pr_err("failed to request skud lcd brdg reset_n\n");
+		return rc;
+	}
+
+	return rc;
+}
+
 static int msm_fb_dsi_client_reset(void)
 {
 	int rc = 0;
@@ -1007,8 +1050,10 @@ static int msm_fb_dsi_client_reset(void)
 	if (machine_is_msm7627a_qrd1())
 		rc = msm_fb_dsi_client_qrd1_reset();
 	else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-						|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
+                        || machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 		rc = msm_fb_dsi_client_qrd3_reset();
+        else if (machine_is_msm8625q_skud())
+                rc = msm_fb_dsi_client_skud_reset();
 	else
 		rc = msm_fb_dsi_client_msm_reset();
 
@@ -1308,6 +1353,68 @@ static int mipi_dsi_panel_qrd3_power(int on)
 	return rc;
 }
 
+static int skud_dsi_gpio_initialized;
+static int mipi_dsi_panel_skud_power(int on)
+{
+	int rc = 0;
+
+	if (!skud_dsi_gpio_initialized) {
+		pmapp_disp_backlight_init();
+
+		skud_dsi_gpio_initialized = 1;
+
+		if (mdp_pdata.cont_splash_enabled) {
+			/*Configure LCD Bridge reset*/
+			rc = gpio_tlmm_config(skud_mipi_dsi_gpio[0],
+			     GPIO_CFG_ENABLE);
+			if (rc < 0) {
+				pr_err("Failed to enable LCD Bridge reset enable\n");
+				return rc;
+			}
+
+			rc = gpio_direction_output(GPIO_SKUD_LCD_BRDG_RESET_N, 1);
+
+			if (rc < 0) {
+				pr_err("Failed GPIO bridge Reset\n");
+				gpio_free(GPIO_SKUD_LCD_BRDG_RESET_N);
+				return rc;
+			}
+			return 0;
+		}
+	}
+
+	if (on) {
+		/*Configure LCD Bridge reset*/
+		rc = gpio_tlmm_config(skud_mipi_dsi_gpio[0], GPIO_CFG_ENABLE);
+		if (rc < 0) {
+			pr_err("Failed to enable LCD Bridge reset enable\n");
+			return rc;
+		}
+
+		rc = gpio_direction_output(GPIO_SKUD_LCD_BRDG_RESET_N, 1);
+
+		if (rc < 0) {
+			pr_err("Failed GPIO bridge Reset\n");
+			gpio_free(GPIO_SKUD_LCD_BRDG_RESET_N);
+			return rc;
+		}
+
+		/*Toggle Bridge Reset GPIO*/
+		msleep(20);
+		gpio_set_value_cansleep(GPIO_SKUD_LCD_BRDG_RESET_N, 0);
+		msleep(20);
+		gpio_set_value_cansleep(GPIO_SKUD_LCD_BRDG_RESET_N, 1);
+		msleep(20);
+
+	} else {
+		gpio_tlmm_config(GPIO_CFG(GPIO_SKUD_LCD_BRDG_RESET_N, 0,
+			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
+			GPIO_CFG_DISABLE);
+	}
+
+	return rc;
+}
+
 static char mipi_dsi_splash_is_enabled(void);
 static int mipi_dsi_panel_power(int on)
 {
@@ -1316,8 +1423,10 @@ static int mipi_dsi_panel_power(int on)
 	if (machine_is_msm7627a_qrd1())
 		rc = mipi_dsi_panel_qrd1_power(on);
 	else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-						|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
+                        || machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 		rc = mipi_dsi_panel_qrd3_power(on);
+        else if (machine_is_msm8625q_skud())
+                rc = mipi_dsi_panel_skud_power(on);
 	else
 		rc = mipi_dsi_panel_msm_power(on);
 	return rc;
@@ -1370,17 +1479,25 @@ void msm7x27a_set_display_params(char *prim_panel)
 				PANEL_NAME_MAX_LEN)))
 			disable_splash = 1;
 	}
+
+	if (machine_is_msm8625q_skud()) {
+                disable_splash = 1;
+        }
 }
 
 void __init msm_fb_add_devices(void)
 {
 	int rc = 0;
-	msm7x27a_set_display_params(prim_panel_name);
+	if (machine_is_msm8625q_skud()) {
+	        msm7x27a_set_display_params("mipi_video_hx8389b_qhd");
+        } else {
+                msm7x27a_set_display_params(prim_panel_name);
+        }
 	if (machine_is_msm7627a_qrd1())
 		platform_add_devices(qrd_fb_devices,
 				ARRAY_SIZE(qrd_fb_devices));
 	else if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-						|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
+                        || machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
 		mipi_NT35510_pdata.bl_lock = 1;
 		mipi_NT35516_pdata.bl_lock = 1;
 		if (disable_splash)
@@ -1394,7 +1511,13 @@ void __init msm_fb_add_devices(void)
 		mdp_pdata.cont_splash_enabled = 0x0;
 		platform_add_devices(qrd3_fb_devices,
 						ARRAY_SIZE(qrd3_fb_devices));
-	} else {
+	} else if (machine_is_msm8625q_skud()) {
+		if (disable_splash)
+			mdp_pdata.cont_splash_enabled = 0x0;
+
+		platform_add_devices(skud_fb_devices,
+				ARRAY_SIZE(skud_fb_devices));
+        } else {
 		mdp_pdata.cont_splash_enabled = 0x0;
 		platform_add_devices(msm_fb_devices,
 				ARRAY_SIZE(msm_fb_devices));
