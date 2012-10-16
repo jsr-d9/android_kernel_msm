@@ -1,4 +1,6 @@
-/*
+/* 
+ *  Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ *  
  *  linux/arch/arm/kernel/traps.c
  *
  *  Copyright (C) 1995-2009 Russell King
@@ -165,6 +167,9 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
 #ifdef CONFIG_ARM_UNWIND
 static inline void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 {
+#ifdef CONFIG_ARCH_MSM
+	flush_cache_all();
+#endif
 	unwind_backtrace(regs, tsk);
 }
 #else

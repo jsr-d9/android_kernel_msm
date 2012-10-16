@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  * include/linux/irqflags.h
  *
  * IRQ flags tracing: follow the state of the hardirq and softirq flags and
@@ -30,11 +31,12 @@ typedef enum {
 #define track_hardirqs_on(ops)				\
 	do {						\
 		unsigned long ip;			\
-		unsigned long caller;			\
+		unsigned long caller[2];			\
 		__asm__ __volatile__ (			\
 			"mov %0, pc\n"			\
 			"mov %1, lr\n"			\
-			: "=r" (ip), "=r" (caller)	\
+			"mov %2, r0\n"			\
+			: "=r" (ip), "=r" (caller[0]), "=r"(caller[1])	\
 			: : "cc" );			\
 		sm_add_event(SM_IRQ_ONOFF_EVENT,	\
 			ip, (ops) |TRACK_IRQSTATUS_ON,	\
@@ -44,11 +46,12 @@ typedef enum {
 #define track_hardirqs_off(ops)				\
 	do {						\
 		unsigned long ip;			\
-		unsigned long caller;			\
+		unsigned long caller[2];			\
 		__asm__ __volatile__ (			\
 			"mov %0, pc\n"			\
 			"mov %1, lr\n"			\
-			: "=r" (ip), "=r" (caller)	\
+			"mov %2, r0\n"			\
+			: "=r" (ip), "=r" (caller[0]), "=r"(caller[1])	\
 			: : "cc" );			\
 		sm_add_event(SM_IRQ_ONOFF_EVENT,	\
 			ip, (ops) |TRACK_IRQSTATUS_OFF,	\
