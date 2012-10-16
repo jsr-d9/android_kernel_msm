@@ -960,6 +960,28 @@ static struct platform_device kp_pdev_qrd3 = {
 	},
 };
 
+static struct pmic8029_led_platform_data leds_data_skud[] = {
+	{
+		.name = "button-backlight",
+		.which = PM_MPP_8,
+		.type = PMIC8029_DRV_TYPE_CUR,
+		.max.cur = PM_MPP__I_SINK__LEVEL_5mA,
+	},
+};
+
+static struct pmic8029_leds_platform_data pmic8029_leds_pdata_skud = {
+	.leds = leds_data_skud,
+	.num_leds = 1,
+};
+
+static struct platform_device pmic_mpp_leds_pdev_skud = {
+	.name   = "pmic-mpp-leds",
+	.id     = -1,
+	.dev    = {
+		.platform_data	= &pmic8029_leds_pdata_skud,
+	},
+};
+
 static struct pmic8029_led_platform_data leds_data[] = {
 	{
 		.name = "button-backlight",
@@ -1116,8 +1138,10 @@ void __init qrd7627a_add_io_devices(void)
 
 		platform_device_register(&pmic_mpp_leds_pdev);
 		platform_device_register(&tricolor_leds_pdev);
+	} else if (machine_is_msm8625q_skud()) {
+		platform_device_register(&pmic_mpp_leds_pdev_skud);
 	}
-	
+
 #ifdef CONFIG_LEDS_TRICOLOR_FLAHSLIGHT
 	    /*tricolor leds init*/
 	platform_device_register(&msm_device_tricolor_leds);
