@@ -241,7 +241,8 @@ static unsigned int msm_AR600X_setup_power(bool on)
 					|| machine_is_msm8625_qrd5()
 					|| machine_is_msm7x27a_qrd5a()
 					|| machine_is_msm7627a_qrd3()
-					|| machine_is_msm8625_qrd7()) {
+					|| machine_is_msm8625_qrd7()
+					|| machine_is_msm8625q_skud()) {
 		rc = gpio_tlmm_config(GPIO_CFG(gpio_wlan_sys_rest_en, 0,
 					GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
 					GPIO_CFG_2MA), GPIO_CFG_ENABLE);
@@ -321,7 +322,8 @@ static unsigned int msm_AR600X_shutdown_power(bool on)
 					|| machine_is_msm8625_qrd5()
 					|| machine_is_msm7x27a_qrd5a()
 					|| machine_is_msm7627a_qrd3()
-					|| machine_is_msm8625_qrd7()) {
+					|| machine_is_msm8625_qrd7()
+					|| machine_is_msm8625q_skud()) {
 		rc = gpio_tlmm_config(GPIO_CFG(gpio_wlan_sys_rest_en, 0,
 					GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL,
 					GPIO_CFG_2MA), GPIO_CFG_ENABLE);
