@@ -706,8 +706,10 @@ static int ashmem_cache_op(struct ashmem_area *asma,
 		vaddr += PAGE_SIZE) {
 		unsigned long physaddr;
 		physaddr = virtaddr_to_physaddr(vaddr);
-		if (!physaddr)
-			return -EINVAL;
+		if (!physaddr) {
+			ret = -EINVAL;
+			goto done;
+		}
 		cache_func(vaddr, PAGE_SIZE, physaddr);
 	}
 #endif
