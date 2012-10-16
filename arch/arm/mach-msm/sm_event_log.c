@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  * Copyright (c) 2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,6 +19,7 @@
 #include <linux/mm.h>
 #include "timer.h"
 
+#include <linux/jiffies.h>
 #include <linux/sm_event.h>
 #include <linux/sm_event_log.h>
 #include <mach/msm_battery.h>
@@ -476,7 +478,7 @@ static void sm_report_periodical_status (void)
 		0, (void *)&sm_periodcal_status, sizeof(sm_periodical_status_data_t));
 }
 
-static __always_inline void log_irq_info(unsigned long ip,  unsigned int flags, unsigned long caller)
+static __always_inline void log_irq_info(unsigned long ip,  unsigned int flags, unsigned long caller, unsigned long r0)
 {
 	unsigned int irq_idx;
 
@@ -493,9 +495,11 @@ static __always_inline void log_irq_info(unsigned long ip,  unsigned int flags, 
 #ifdef CONFIG_SMP
 	g_track_irq_buf[irq_idx].cpuid = smp_processor_id();
 #endif
-	/*
-	 * g_track_irq_buf[irq_idx].cycles = 0;
-	 */
+	g_track_irq_buf[irq_idx].reserved[0] = current->pid;
+	g_track_irq_buf[irq_idx].reserved[1] = r0;
+
+	g_track_irq_buf[irq_idx].cycles = jiffies;
+
 /*
 	cache_clean((unsigned long)(g_track_irq_buf + g_track_index));
 	cache_clean((unsigned long)(&g_track_index));
@@ -514,7 +518,7 @@ static int32_t sm_add_log_event(uint32_t event_id, uint32_t param1, int param2, 
 		/* no need to check if data is NULL since it
 		 * is called by track_hardirqs_on/off
 		 */
-		log_irq_info(param1, param2, ((unsigned long*)data)[0]);
+		log_irq_info(param1, param2, ((unsigned long*)data)[0], ((unsigned long*)data)[1]);
 		return 0;
 	}
 
