@@ -22,7 +22,7 @@ config ARCH_MSM7X25
 config ARCH_MSM7X27
 	bool "MSM7x27"
 	select ARCH_MSM_ARM11 if MSM_SOC_REV_NONE
-	select ARCH_HAS_BARRIERS if MSM_SOC_REV_NONE
+	select ARCH_HAS_BARRIERS
 	select ARCH_MSM_CORTEX_A5 if MSM_SOC_REV_A
 	select MSM_VIC
 	select CPU_V6 if MSM_SOC_REV_NONE
@@ -2517,4 +2517,14 @@ config MSM_8X60_FUSION_GPIO_GLITCH
 	help
 	  Enable masking of glitch during boot up, which helps in avoiding unwanted
 	  noise or s/w code from toggling the ap2mdm err fatal.
+
+config MSM_FIQ
+	bool "Enable FIQ for debugging"
+	depends on ARCH_MSM8625
+	select FIQ
+	help
+	  Enable any line to be used as an FIQ. This will help debugging
+	  if apps is not responding and holding lock with irqs disabled.
+	  Modem will then generate an raise a FIQ on this line before sending
+	  SMSM reset
 endif
