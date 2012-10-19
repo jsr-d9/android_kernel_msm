@@ -41,6 +41,7 @@ enum {
 	HW_PLATFORM_ALASKA  = 0xA0,
 	HW_PLATFORM_8X25_QRD5 = 0xA2,
 	HW_PLATFORM_7X27_QRD5A = 0xA3,
+	HW_PLATFORM_8X25Q_SKUD = 0xA7,
 	HW_PLATFORM_INVALID
 };
 
@@ -58,7 +59,8 @@ const char *hw_platform[] = {
 	[HW_PLATFORM_SKU7] = "msm7627a_sku7",
 	[HW_PLATFORM_ALASKA] = "msm7627a_skua",
 	[HW_PLATFORM_8X25_QRD5] = "msm8x25_sku5",
-	[HW_PLATFORM_7X27_QRD5A] = "msm7x27_sku5a"
+	[HW_PLATFORM_7X27_QRD5A] = "msm7x27_sku5a",
+	[HW_PLATFORM_8X25Q_SKUD] = "msm8x25q_skud"
 };
 
 enum {
