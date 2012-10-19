@@ -69,6 +69,31 @@ static int _vreg_set_level(int vreg_id, int level_mV)
 
 	return _pcom_err_to_linux_errno(_id);
 }
+/* vreg_set_level: (vreg ID, mV) => (return code, <null>) */
+static int _vreg_get_level(int vreg_id)
+{
+	unsigned _id	= (unsigned)vreg_id;
+	unsigned _level;
+	int	 rc;
+
+	rc = msm_proc_comm(PCOM_OEM_VREG_GET_LEVEL, &_id, &_level);
+
+	if (rc == 0)
+		return _level;
+
+	return _pcom_err_to_linux_errno(_id);
+}
+
+static int _vreg_get_status(int vreg_id)
+{
+	unsigned _id = (unsigned)vreg_id;
+	unsigned _status;
+	int rc;
+
+	rc = msm_proc_comm(PCOM_OEM_VREG_GET_STATUS, &_id, &_status);
+
+	return _status;
+}
 
 /* vreg_pull_down: (pull down, vreg ID) => (<null>, <null>) */
 /* Returns error code from msm_proc_comm. */
@@ -134,9 +159,16 @@ static int proccomm_vreg_disable(struct regulator_dev *rdev)
 
 static int proccomm_vreg_is_enabled(struct regulator_dev *rdev)
 {
-	struct proccomm_regulator_drvdata *ddata = rdev_get_drvdata(rdev);
+#if 0
+		struct proccomm_regulator_drvdata *ddata = rdev_get_drvdata(rdev);
+		return ddata->enabled;
+#else
+	int rc;
+	rc = _vreg_get_status(rdev_get_id(rdev));
 
-	return ddata->enabled;
+	return rc;
+#endif
+
 }
 
 static int proccomm_vreg_rise_time(struct regulator_dev *rdev)
@@ -149,9 +181,31 @@ static int proccomm_vreg_rise_time(struct regulator_dev *rdev)
 static int proccomm_vreg_get_voltage(struct regulator_dev *rdev)
 {
 
-	struct proccomm_regulator_drvdata *ddata = rdev_get_drvdata(rdev);
+#if 0
+		struct proccomm_regulator_drvdata *ddata = rdev_get_drvdata(rdev);
 
-	return MV_TO_UV(ddata->last_voltage);
+		return MV_TO_UV(ddata->last_voltage);
+#else
+	struct proccomm_regulator_drvdata *ddata = rdev_get_drvdata(rdev);
+	int level_mV = 0;
+	int rc;
+
+	rc = _vreg_get_level(rdev_get_id(rdev));
+
+	if (rc <=0) {
+		dev_err(rdev_get_dev(rdev),
+			"could not get voltage for regulator %d (%s) "
+			" %d\n",
+			rdev_get_id(rdev), ddata->rdesc.name, rc);
+	} else {
+		dev_dbg(rdev_get_dev(rdev),
+			"voltage for regulator %d (%s) set to %d mV\n",
+			rdev_get_id(rdev), ddata->rdesc.name, level_mV);
+		level_mV = rc;
+	}
+	return MV_TO_UV(level_mV);
+#endif
+
 }
 
 static int proccomm_vreg_set_voltage(struct regulator_dev *rdev,
