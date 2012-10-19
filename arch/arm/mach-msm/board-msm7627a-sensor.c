@@ -327,7 +327,7 @@ void __init msm7627a_sensor_init(void)
 #endif
 
 #ifdef CONFIG_BOSCH_BMA250
-	if (machine_is_msm8625_qrd7() || machine_is_msm7627a_qrd3()) {
+	if (machine_is_msm8625_qrd7() || machine_is_msm7627a_qrd3() || machine_is_msm8625q_skud()) {
 		pr_info("i2c_register_board_info BMA250 ACC\n");
 		i2c_register_board_info(MSM_GSBI1_QUP_I2C_BUS_ID,
 					bma250_i2c_info,
