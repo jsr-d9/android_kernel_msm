@@ -1479,20 +1479,14 @@ void msm7x27a_set_display_params(char *prim_panel)
 				PANEL_NAME_MAX_LEN)))
 			disable_splash = 1;
 	}
-
-	if (machine_is_msm8625q_skud()) {
-                disable_splash = 1;
-        }
 }
 
 void __init msm_fb_add_devices(void)
 {
 	int rc = 0;
-	if (machine_is_msm8625q_skud()) {
-	        msm7x27a_set_display_params("mipi_video_hx8389b_qhd");
-        } else {
-                msm7x27a_set_display_params(prim_panel_name);
-        }
+
+        msm7x27a_set_display_params(prim_panel_name);
+
 	if (machine_is_msm7627a_qrd1())
 		platform_add_devices(qrd_fb_devices,
 				ARRAY_SIZE(qrd_fb_devices));
