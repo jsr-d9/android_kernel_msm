@@ -14,11 +14,13 @@
 #include <linux/interrupt.h>
 #include <linux/slab.h>
 #include <linux/irq.h>
+#include <linux/nmi.h>
 #include <asm/fiq.h>
 #include <asm/hardware/gic.h>
 #include <asm/cacheflush.h>
 #include <mach/irqs-8625.h>
 #include <mach/socinfo.h>
+#include <asm/unwind.h>
 
 #include "msm_watchdog.h"
 
@@ -33,6 +35,7 @@ void msm7k_fiq_handler(void)
 {
 	struct irq_data *d;
 	struct irq_chip *c;
+	struct pt_regs context_regs;
 
 	pr_info("Fiq is received %s\n", __func__);
 	fiq_counter++;
@@ -46,6 +49,18 @@ void msm7k_fiq_handler(void)
 	local_irq_enable();
 	flush_cache_all();
 	outer_flush_all();
+ pr_err("%s msm_dump_cpu_ctx usr_r0:0x%x", __func__, msm_dump_cpu_ctx.usr_r0);
+	pr_err("%s msm_dump_cpu_ctx usr_r0:0x%x usr_r1:0x%x usr_r2:0x%x usr_r3:0x%x usr_r4:0x%x usr_r5:0x%x usr_r6:0x%x usr_r7:0x%x usr_r8:0x%x usr_r9:0x%x usr_r10:0x%x usr_r11:0x%x usr_r12:0x%x usr_r13:0x%x usr_r14:0x%x irq_spsr:0x%x irq_r13:0x%x irq_r14:0x%x svc_spsr:0x%x svc_r13:0x%x svc_r14:0x%x abt_spsr:0x%x abt_r13:0x%x abt_r14:0x%x und_spsr:0x%x und_r13:0x%x und_r14:0x%x fiq_spsr:0x%x fiq_r8:0x%x fiq_r9:0x%x fiq_r10:0x%x fiq_r11:0x%x fiq_r12:0x%x fiq_r13:0x%x fiq_r14:0x%x\n",__func__, msm_dump_cpu_ctx.usr_r0,msm_dump_cpu_ctx.usr_r1,msm_dump_cpu_ctx.usr_r2,msm_dump_cpu_ctx.usr_r3, msm_dump_cpu_ctx.usr_r4, msm_dump_cpu_ctx.usr_r5, msm_dump_cpu_ctx.usr_r6, msm_dump_cpu_ctx.usr_r7, msm_dump_cpu_ctx.usr_r8, msm_dump_cpu_ctx.usr_r9, msm_dump_cpu_ctx.usr_r10, msm_dump_cpu_ctx.usr_r11, msm_dump_cpu_ctx.usr_r12, msm_dump_cpu_ctx.usr_r13, msm_dump_cpu_ctx.usr_r14, msm_dump_cpu_ctx.irq_spsr, msm_dump_cpu_ctx.irq_r13, msm_dump_cpu_ctx.irq_r14, msm_dump_cpu_ctx.svc_spsr, msm_dump_cpu_ctx.svc_r13, msm_dump_cpu_ctx.svc_r14, msm_dump_cpu_ctx.abt_spsr,msm_dump_cpu_ctx.abt_r13, msm_dump_cpu_ctx.abt_r14, msm_dump_cpu_ctx.und_spsr,msm_dump_cpu_ctx.und_r13, msm_dump_cpu_ctx.und_r14, msm_dump_cpu_ctx.fiq_spsr,msm_dump_cpu_ctx.fiq_r8, msm_dump_cpu_ctx.fiq_r9, msm_dump_cpu_ctx.fiq_r10, msm_dump_cpu_ctx.fiq_r11, msm_dump_cpu_ctx.fiq_r12, msm_dump_cpu_ctx.fiq_r13, msm_dump_cpu_ctx.fiq_r14);
+	context_regs.ARM_sp = msm_dump_cpu_ctx.svc_r13;
+	context_regs.ARM_lr = msm_dump_cpu_ctx.svc_r14;
+	context_regs.ARM_fp = msm_dump_cpu_ctx.usr_r11; //for the svc r11 is the same with usr r11
+	context_regs.ARM_pc = msm_dump_cpu_ctx.svc_r14;
+	//dump_stack();
+	unwind_backtrace(&context_regs, current);
+#ifdef CONFIG_SMP
+	trigger_all_cpu_backtrace();
+#endif
+
 	return;
 }
 
