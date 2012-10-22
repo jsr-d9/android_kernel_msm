@@ -34,10 +34,10 @@
 #define CDBG_HIGH(fmt, args...) printk(fmt, ##args)
 #endif
 
-//#define OV5648_TRULY_CM8352_OTP_FEATURE
-#ifdef OV5648_TRULY_CM8352_OTP_FEATURE
-#undef OV5648_TRULY_CM8352_OTP_FEATURE
-#endif
+#define OV5648_TRULY_CM8352_OTP_FEATURE
+//#ifdef OV5648_TRULY_CM8352_OTP_FEATURE
+//#undef OV5648_TRULY_CM8352_OTP_FEATURE
+//#endif
 
 static struct msm_sensor_ctrl_t ov5648_truly_cm8352_s_ctrl;
 
@@ -63,6 +63,7 @@ static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_groupoff_settings[] = 
 static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_prev_settings[] = {
 	/*1296*972 preview*/
 	// 1296x972 30fps 2 lane MIPI 420Mbps/lane
+	{0x3035, 0x21}, //PLL
 	{0x3501, 0x3d},//exposure
 	{0x3502, 0x00},//exposure
 	{0x3708, 0x66},
@@ -104,6 +105,7 @@ static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_prev_settings[] = {
 static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_snap_settings[] = {
 	/* 2592*1944 capture */
 	//2592x1944 15fps 2 lane MIPI 420Mbps/lane
+	{0x3035, 0x21}, //PLL
 	{0x3501, 0x7b}, //exposure
 	{0x2502, 0x00}, //exposure
 	{0x3708, 0x63}, //
@@ -225,6 +227,7 @@ static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_video_90fps_settings[]
 };
 
 static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_zsl_settings[] = {
+	{0x3035, 0x21}, //PLL
 	{0x3501, 0x7b}, //exposure
 	{0x2502, 0x00}, //exposure
 	{0x3708, 0x63}, //
@@ -464,7 +467,7 @@ static struct msm_sensor_output_info_t ov5648_truly_cm8352_dimensions[] = {
 		.y_output = 0x798,         /*1944*/
 		.line_length_pclk = 0xb00,
 		.frame_length_lines = 0x7c0,
-		.vt_pixel_clk = 79000000,
+		.vt_pixel_clk = 84000000,
 		.op_pixel_clk = 158000000,
 		.binning_factor = 0x0,
 	},
@@ -473,7 +476,7 @@ static struct msm_sensor_output_info_t ov5648_truly_cm8352_dimensions[] = {
 		.y_output = 0x3cc,         /*972*/
 		.line_length_pclk = 0xb00,
 		.frame_length_lines = 0x3e0,
-		.vt_pixel_clk = 55000000,
+		.vt_pixel_clk = 84000000,
 		.op_pixel_clk = 110000000,
 		.binning_factor = 0x0,
 	},
@@ -482,16 +485,16 @@ static struct msm_sensor_output_info_t ov5648_truly_cm8352_dimensions[] = {
 		.y_output = 0x1E0,   /*480*/
 		.line_length_pclk = 0x728,
 		.frame_length_lines = 0x1FC,
-		.vt_pixel_clk = 56004480,
+		.vt_pixel_clk = 56000000,
 		.op_pixel_clk = 159408000,
 		.binning_factor = 0x0,
 	},
 	{ /* For 90fps */
 		.x_output = 0x280,  /*640*/
-		.y_output = 0x1E0,   /*480*/
+		.y_output = 0x1E0,  /*480*/
 		.line_length_pclk = 0x728,
 		.frame_length_lines = 0x1FC,
-		.vt_pixel_clk = 56004480,
+		.vt_pixel_clk = 84000000,
 		.op_pixel_clk = 159408000,
 		.binning_factor = 0x0,
 	},
@@ -500,7 +503,7 @@ static struct msm_sensor_output_info_t ov5648_truly_cm8352_dimensions[] = {
 		.y_output = 0x798,         /*1944*/
 		.line_length_pclk = 0xb00,
 		.frame_length_lines = 0x7c0,
-		.vt_pixel_clk = 79000000,
+		.vt_pixel_clk = 84000000,
 		.op_pixel_clk = 158000000,
 		.binning_factor = 0x0,
 	},
@@ -542,245 +545,273 @@ void ov5648_truly_cm8352_sensor_reset_stream(struct msm_sensor_ctrl_t *s_ctrl)
 }
 
 #ifdef OV5648_TRULY_CM8352_OTP_FEATURE
-/*******************************************************************************
-*
-*******************************************************************************/
+
+int RG_Ratio_Typical = 0x128;
+int BG_Ratio_Typical = 0x180;
+
 struct otp_struct {
-	uint8_t customer_id;
-	uint8_t module_integrator_id;
-	uint8_t lens_id;
-	uint8_t rg_ratio;
-	uint8_t bg_ratio;
-	uint8_t user_data[5];
-} st_ov5648_truly_cm8352_otp;
+     int customer_id;
+     int module_integrator_id;
+     int lens_id;
+     int rg_ratio;
+     int bg_ratio;
+     int user_data[2];
+     int light_rg;
+     int light_bg;
+};
 
-/*******************************************************************************
-* index: index of otp group. (0, 1, 2)
-* return value:
-*     0, group index is empty
-*     1, group index has invalid data
-*     2, group index has valid data
-*******************************************************************************/
-uint16_t ov5648_truly_cm8352_check_otp(struct msm_sensor_ctrl_t *s_ctrl, uint16_t index)
+static struct msm_sensor_ctrl_t *otp_s_ctrl = NULL;
+
+int32_t ov5648_truly_cm8352_otp_write(uint16_t addr, uint16_t data)
 {
-	uint16_t temp, i;
-	uint16_t address;
-	/* read otp into buffer */
-	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x3d21, 0x01,
+	return msm_camera_i2c_write(otp_s_ctrl->sensor_i2c_client, addr, data,
 		MSM_CAMERA_I2C_BYTE_DATA);
-
-	usleep_range(2000, 2500);
-	address = 0x3d05 + index*9;
-	msm_camera_i2c_read(s_ctrl->sensor_i2c_client, address, &temp,
-		MSM_CAMERA_I2C_BYTE_DATA);
-
-	/* disable otp read */
-	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x3d21, 0x00,
-		MSM_CAMERA_I2C_BYTE_DATA);
-
-	/* clear otp buffer */
-	for (i = 0; i < 32; i++) {
-		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, (0x3d00+i),
-				0x00, MSM_CAMERA_I2C_BYTE_DATA);
-	}
-
-	if (!temp)
-		return 0;
-	else if ((!(temp & 0x80)) && (temp&0x7f))
-		return 2;
-	else
-		return 1;
-}
-/*******************************************************************************
-*
-*******************************************************************************/
-void ov5648_truly_cm8352_read_otp(struct msm_sensor_ctrl_t *s_ctrl,
-		uint16_t index, struct otp_struct *potp)
-{
-	uint16_t temp, i;
-	uint16_t address;
-	/* read otp into buffer */
-	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x3d21, 0x01,
-		MSM_CAMERA_I2C_BYTE_DATA);
-
-	usleep_range(2000, 2500);
-	address = 0x3d05 + index*9;
-
-	msm_camera_i2c_read(s_ctrl->sensor_i2c_client, address, &temp,
-		MSM_CAMERA_I2C_BYTE_DATA);
-
-	potp->module_integrator_id = temp;
-	potp->customer_id = temp & 0x7f;
-
-	msm_camera_i2c_read(s_ctrl->sensor_i2c_client, (address+1), &temp,
-		MSM_CAMERA_I2C_BYTE_DATA);
-	potp->lens_id = temp;
-
-	msm_camera_i2c_read(s_ctrl->sensor_i2c_client, (address+2), &temp,
-		MSM_CAMERA_I2C_BYTE_DATA);
-	potp->rg_ratio = temp;
-
-	msm_camera_i2c_read(s_ctrl->sensor_i2c_client, (address+3), &temp,
-		MSM_CAMERA_I2C_BYTE_DATA);
-	potp->bg_ratio = temp;
-
-	msm_camera_i2c_read(s_ctrl->sensor_i2c_client, (address+4), &temp,
-		MSM_CAMERA_I2C_BYTE_DATA);
-	potp->user_data[0] = temp;
-
-	msm_camera_i2c_read(s_ctrl->sensor_i2c_client, (address+5), &temp,
-		MSM_CAMERA_I2C_BYTE_DATA);
-	potp->user_data[1] = temp;
-
-	msm_camera_i2c_read(s_ctrl->sensor_i2c_client, (address+6), &temp,
-		MSM_CAMERA_I2C_BYTE_DATA);
-	potp->user_data[2] = temp;
-
-	msm_camera_i2c_read(s_ctrl->sensor_i2c_client, (address+7), &temp,
-		MSM_CAMERA_I2C_BYTE_DATA);
-	potp->user_data[3] = temp;
-
-	msm_camera_i2c_read(s_ctrl->sensor_i2c_client, (address+8), &temp,
-		MSM_CAMERA_I2C_BYTE_DATA);
-	potp->user_data[4] = temp;
-
-	CDBG("%s customer_id  = 0x%02x\r\n", __func__, potp->customer_id);
-	CDBG("%s lens_id      = 0x%02x\r\n", __func__, potp->lens_id);
-	CDBG("%s rg_ratio     = 0x%02x\r\n", __func__, potp->rg_ratio);
-	CDBG("%s bg_ratio     = 0x%02x\r\n", __func__, potp->bg_ratio);
-	CDBG("%s user_data[0] = 0x%02x\r\n", __func__, potp->user_data[0]);
-	CDBG("%s user_data[1] = 0x%02x\r\n", __func__, potp->user_data[1]);
-	CDBG("%s user_data[2] = 0x%02x\r\n", __func__, potp->user_data[2]);
-	CDBG("%s user_data[3] = 0x%02x\r\n", __func__, potp->user_data[3]);
-	CDBG("%s user_data[4] = 0x%02x\r\n", __func__, potp->user_data[4]);
-
-	/* disable otp read */
-	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x3d21, 0x00,
-		MSM_CAMERA_I2C_BYTE_DATA);
-	/* clear otp buffer */
-	for (i = 0; i < 32; i++) {
-		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, (0x3d00+i),
-				0x00, MSM_CAMERA_I2C_BYTE_DATA);
-	}
 }
 
-/*******************************************************************************
-* R_gain, sensor red gain of AWB, 0x400 =1
-* G_gain, sensor green gain of AWB, 0x400 =1
-* B_gain, sensor blue gain of AWB, 0x400 =1
-*******************************************************************************/
-void ov5648_truly_cm8352_update_awb_gain(struct msm_sensor_ctrl_t *s_ctrl,
-		uint16_t R_gain, uint16_t G_gain, uint16_t B_gain)
+
+uint16_t ov5648_truly_cm8352_otp_read(uint16_t addr)
 {
-	CDBG("%s R_gain = 0x%04x\r\n", __func__, R_gain);
-	CDBG("%s G_gain = 0x%04x\r\n", __func__, G_gain);
-	CDBG("%s B_gain = 0x%04x\r\n", __func__, B_gain);
-	if (R_gain > 0x400) {
-		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x5186,
-				(R_gain>>8), MSM_CAMERA_I2C_BYTE_DATA);
-		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x5187,
-				(R_gain&0xff), MSM_CAMERA_I2C_BYTE_DATA);
-	}
-	if (G_gain > 0x400) {
-		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x5188,
-				(G_gain>>8), MSM_CAMERA_I2C_BYTE_DATA);
-		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x5189,
-				(G_gain&0xff), MSM_CAMERA_I2C_BYTE_DATA);
-	}
-	if (B_gain > 0x400) {
-		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x518a,
-				(B_gain>>8), MSM_CAMERA_I2C_BYTE_DATA);
-		msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x518b,
-				(B_gain&0xff), MSM_CAMERA_I2C_BYTE_DATA);
-	}
+    uint16_t temp;
+	msm_camera_i2c_read(otp_s_ctrl->sensor_i2c_client, addr, &temp,
+		MSM_CAMERA_I2C_BYTE_DATA);
+    return temp;
 }
 
-/*******************************************************************************
-* R/G and B/G of typical camera module is defined here
-*******************************************************************************/
-#define OV5648_TRULY_CM8352_RG_RATIO_TYPICAL_VALUE 64
-#define OV5648_TRULY_CM8352_BG_RATIO_TYPICAL_VALUE 105
-/*******************************************************************************
-* call this function after OV5648_TRULY_CM8352 initialization
-* return value:
-*     0, update success
-*     1, no OTP
-*******************************************************************************/
-uint16_t ov5648_truly_cm8352_update_otp(struct msm_sensor_ctrl_t *s_ctrl)
+// index: index of otp group. (0, 1, 2)
+// return:    0, group index is empty
+//       1, group index has invalid data
+//       2, group index has valid data
+int ov5648_truly_cm8352_check_otp(int index)
 {
-	uint16_t i;
-	uint16_t otp_index;
-	uint16_t temp;
-	uint16_t R_gain, G_gain, B_gain, G_gain_R, G_gain_B;
-	/* R/G and B/G of current camera module is read out from sensor OTP */
-	/* check first OTP with valid data */
-	for (i = 0; i < 3; i++) {
-		temp = ov5648_truly_cm8352_check_otp(s_ctrl, i);
-		if (temp == 2) {
-			otp_index = i;
-			break;
-		}
-	}
-	if (i == 3) {
-		/* no valid wb OTP data */
-		CDBG("no valid wb OTP data\r\n");
-		return 1;
-	}
-	ov5648_truly_cm8352_read_otp(s_ctrl, otp_index, &st_ov5648_truly_cm8352_otp);
-	/* calculate G_gain */
-	/* 0x400 = 1x gain */
-	if (st_ov5648_truly_cm8352_otp.bg_ratio < OV5648_TRULY_CM8352_BG_RATIO_TYPICAL_VALUE) {
-		if (st_ov5648_truly_cm8352_otp.rg_ratio < OV5648_TRULY_CM8352_RG_RATIO_TYPICAL_VALUE) {
-			G_gain = 0x400;
-			B_gain = 0x400 *
-				OV5648_TRULY_CM8352_BG_RATIO_TYPICAL_VALUE /
-				st_ov5648_truly_cm8352_otp.bg_ratio;
-			R_gain = 0x400 *
-				OV5648_TRULY_CM8352_RG_RATIO_TYPICAL_VALUE /
-				st_ov5648_truly_cm8352_otp.rg_ratio;
-		} else {
-			R_gain = 0x400;
-			G_gain = 0x400 *
-				st_ov5648_truly_cm8352_otp.rg_ratio /
-				OV5648_TRULY_CM8352_RG_RATIO_TYPICAL_VALUE;
-			B_gain = G_gain *
-				OV5648_TRULY_CM8352_BG_RATIO_TYPICAL_VALUE /
-				st_ov5648_truly_cm8352_otp.bg_ratio;
-		}
-	} else {
-		if (st_ov5648_truly_cm8352_otp.rg_ratio < OV5648_TRULY_CM8352_RG_RATIO_TYPICAL_VALUE) {
-			B_gain = 0x400;
-			G_gain = 0x400 *
-				st_ov5648_truly_cm8352_otp.bg_ratio /
-				OV5648_TRULY_CM8352_BG_RATIO_TYPICAL_VALUE;
-			R_gain = G_gain *
-				OV5648_TRULY_CM8352_RG_RATIO_TYPICAL_VALUE /
-				st_ov5648_truly_cm8352_otp.rg_ratio;
-		} else {
-			G_gain_B = 0x400 *
-				st_ov5648_truly_cm8352_otp.bg_ratio /
-				OV5648_TRULY_CM8352_BG_RATIO_TYPICAL_VALUE;
-			G_gain_R = 0x400 *
-				st_ov5648_truly_cm8352_otp.rg_ratio /
-				OV5648_TRULY_CM8352_RG_RATIO_TYPICAL_VALUE;
-			if (G_gain_B > G_gain_R) {
-				B_gain = 0x400;
-				G_gain = G_gain_B;
-				R_gain = G_gain *
-					OV5648_TRULY_CM8352_RG_RATIO_TYPICAL_VALUE /
-					st_ov5648_truly_cm8352_otp.rg_ratio;
-			} else {
-				R_gain = 0x400;
-				G_gain = G_gain_R;
-				B_gain = G_gain *
-					OV5648_TRULY_CM8352_BG_RATIO_TYPICAL_VALUE /
-					st_ov5648_truly_cm8352_otp.bg_ratio;
-			}
-		}
-	}
-	ov5648_truly_cm8352_update_awb_gain(s_ctrl, R_gain, G_gain, B_gain);
-	return 0;
+     int temp, i;
+     int address;
+
+     if (index<2)
+     {
+         // read otp --Bank 0
+         ov5648_truly_cm8352_otp_write(0x3d84, 0xc0);
+         ov5648_truly_cm8352_otp_write(0x3d85, 0x00);
+         ov5648_truly_cm8352_otp_write(0x3d86, 0x0f);
+         ov5648_truly_cm8352_otp_write(0x3d81, 0x01);
+
+         usleep_range(10000, 10500);
+         address = 0x3d05 + index*9;
+     }
+     else{
+         // read otp --Bank 1
+         ov5648_truly_cm8352_otp_write(0x3d84, 0xc0);
+         ov5648_truly_cm8352_otp_write(0x3d85, 0x10);
+         ov5648_truly_cm8352_otp_write(0x3d86, 0x1f);
+         ov5648_truly_cm8352_otp_write(0x3d81, 0x01);
+         usleep_range(10000, 10500);
+         address = 0x3d05 + index*9-16;
+     }
+     temp = ov5648_truly_cm8352_otp_read(address);
+
+     // disable otp read
+     ov5648_truly_cm8352_otp_write(0x3d81, 0x00);
+
+     // clear otp buffer
+     for (i=0;i<16;i++) {
+         ov5648_truly_cm8352_otp_write(0x3d00 + i, 0x00);
+     }
+
+     if (!temp) {
+         return 0;
+     }
+     else if ((!(temp & 0x80)) && (temp&0x7f)) {
+         return 2;
+     }
+     else {
+         return 1;
+     }
 }
+
+// index: index of otp group. (0, 1, 2)
+// return:    0,
+int ov5648_truly_cm8352_read_otp(int index, struct otp_struct * otp_ptr)
+{
+     int i;
+     int address;
+
+     // read otp into buffer
+     if (index<2)
+     {
+         // read otp --Bank 0
+         ov5648_truly_cm8352_otp_write(0x3d84, 0xc0);
+         ov5648_truly_cm8352_otp_write(0x3d85, 0x00);
+         ov5648_truly_cm8352_otp_write(0x3d86, 0x0f);
+         ov5648_truly_cm8352_otp_write(0x3d81, 0x01);
+         usleep_range(10000, 10500);
+         address = 0x3d05 + index*9;
+     }
+     else{
+         // read otp --Bank 1
+         ov5648_truly_cm8352_otp_write(0x3d84, 0xc0);
+         ov5648_truly_cm8352_otp_write(0x3d85, 0x10);
+         ov5648_truly_cm8352_otp_write(0x3d86, 0x1f);
+         ov5648_truly_cm8352_otp_write(0x3d81, 0x01);
+         usleep_range(10000, 10500);
+         address = 0x3d05 + index*9-16;
+     }
+
+     (*otp_ptr).customer_id = (ov5648_truly_cm8352_otp_read(address) & 0x7f);
+     (*otp_ptr).module_integrator_id = ov5648_truly_cm8352_otp_read(address);
+     (*otp_ptr).lens_id = ov5648_truly_cm8352_otp_read(address + 1);
+     (*otp_ptr).rg_ratio = (ov5648_truly_cm8352_otp_read(address + 2)<<2) + (ov5648_truly_cm8352_otp_read(address + 6)>>6) ;
+     (*otp_ptr).bg_ratio = (ov5648_truly_cm8352_otp_read(address + 3)<<2) +((ov5648_truly_cm8352_otp_read(address + 6)>>4)&(0x03));
+     (*otp_ptr).user_data[0] = ov5648_truly_cm8352_otp_read(address + 4);
+     (*otp_ptr).user_data[1] = ov5648_truly_cm8352_otp_read(address + 5);
+     (*otp_ptr).light_rg = (int)(ov5648_truly_cm8352_otp_read(address + 7)<<2) + (int)((ov5648_truly_cm8352_otp_read(address + 6)>>2)&(0x03));
+     (*otp_ptr).light_bg = (int)(ov5648_truly_cm8352_otp_read(address + 8)<<2) + (int)((ov5648_truly_cm8352_otp_read(address + 6))&(0x03));
+
+     CDBG("==========OV5648 OTP INFO==========\r\n");
+     CDBG("%s-customer_id  = 0x%x\r\n", __func__, otp_ptr->customer_id);
+     CDBG("%s-module_integrator_id      = 0x%x\r\n", __func__, otp_ptr->module_integrator_id);
+     CDBG("%s-lens_id     = 0x%x\r\n", __func__, otp_ptr->lens_id);
+     CDBG("%s-rg_ratio     = 0x%x\r\n", __func__, otp_ptr->rg_ratio);
+     CDBG("%s-bg_ratio     = 0x%x\r\n", __func__, otp_ptr->bg_ratio);
+
+     CDBG("%s-user_data[0] = 0x%x\r\n", __func__, otp_ptr->user_data[0]);
+     CDBG("%s-user_data[1] = 0x%x\r\n", __func__, otp_ptr->user_data[1]);
+     CDBG("%s-light_rg = 0x%x\r\n", __func__, otp_ptr->light_rg);
+     CDBG("%s-light_bg = 0x%x\r\n", __func__, otp_ptr->light_bg);
+     // disable otp read
+     ov5648_truly_cm8352_otp_write(0x3d81, 0x00);
+
+     // clear otp buffer
+     for (i=0;i<16;i++) {
+         ov5648_truly_cm8352_otp_write(0x3d00 + i, 0x00);
+     }
+
+     return 0;
+}
+
+// R_gain, sensor red gain of AWB, 0x400 =1
+// G_gain, sensor green gain of AWB, 0x400 =1
+// B_gain, sensor blue gain of AWB, 0x400 =1
+// return 0;
+int ov5648_truly_cm8352_update_awb_gain(int R_gain, int G_gain, int B_gain)
+{
+     if (R_gain>0x400) {
+         ov5648_truly_cm8352_otp_write(0x5186, R_gain>>8);
+         ov5648_truly_cm8352_otp_write(0x5187, R_gain & 0x00ff);
+     }
+
+     if (G_gain>0x400) {
+         ov5648_truly_cm8352_otp_write(0x5188, G_gain>>8);
+         ov5648_truly_cm8352_otp_write(0x5189, G_gain & 0x00ff);
+     }
+
+     if (B_gain>0x400) {
+         ov5648_truly_cm8352_otp_write(0x518a, B_gain>>8);
+         ov5648_truly_cm8352_otp_write(0x518b, B_gain & 0x00ff);
+     }
+     return 0;
+}
+
+
+// call this function after OV5647 initialization
+// return value: 0 update success
+//       1, no OTP
+int ov5648_truly_cm8352_update_otp(struct msm_sensor_ctrl_t *s_ctrl)
+{
+     struct otp_struct current_otp;
+     int i;
+     int otp_index;
+     int temp;
+     int R_gain, G_gain, B_gain, G_gain_R, G_gain_B;
+     int rg,bg;
+     otp_s_ctrl = s_ctrl;
+
+
+     // R/G and B/G of current camera module is read out from sensor OTP
+     // check first OTP with valid data
+     for(i=0;i<3;i++) {
+         temp = ov5648_truly_cm8352_check_otp(i);
+         if (temp == 2) {
+              otp_index = i;
+              break;
+         }
+     }
+
+     if (i==3) {
+         // no valid wb OTP data
+         return 1;
+     }
+
+     ov5648_truly_cm8352_read_otp(otp_index, &current_otp);
+
+     if(current_otp.light_rg==0) {
+         // no light source information in OTP
+         rg = current_otp.rg_ratio;
+     }
+     else {
+         // light source information found in OTP
+         rg = current_otp.rg_ratio * (current_otp.light_rg +512) / 1024;
+     }
+
+     if(current_otp.light_bg==0) {
+         // no light source information in OTP
+         bg = current_otp.bg_ratio;
+     }
+     else {
+         // light source information found in OTP
+         bg = current_otp.bg_ratio * (current_otp.light_bg +512) / 1024;
+     }
+
+
+     //calculate G gain
+     //0x400 = 1x gain
+     if(bg < BG_Ratio_Typical) {
+         if (rg< RG_Ratio_Typical) {
+              // current_otp.bg_ratio < BG_Ratio_typical &&
+              // current_otp.rg_ratio < RG_Ratio_typical
+              G_gain = 0x400;
+              B_gain = 0x400 * BG_Ratio_Typical / bg;
+              R_gain = 0x400 * RG_Ratio_Typical / rg;
+         }
+         else {
+              // current_otp.bg_ratio < BG_Ratio_typical &&
+              // current_otp.rg_ratio >= RG_Ratio_typical
+              R_gain = 0x400;
+              G_gain = 0x400 * rg / RG_Ratio_Typical;
+              B_gain = G_gain * BG_Ratio_Typical /bg;
+         }
+     }
+     else {
+         if (rg < RG_Ratio_Typical) {
+              // current_otp.bg_ratio >= BG_Ratio_typical &&
+              // current_otp.rg_ratio < RG_Ratio_typical
+              B_gain = 0x400;
+              G_gain = 0x400 * bg / BG_Ratio_Typical;
+              R_gain = G_gain * RG_Ratio_Typical / rg;
+         }
+         else {
+              // current_otp.bg_ratio >= BG_Ratio_typical &&
+              // current_otp.rg_ratio >= RG_Ratio_typical
+              G_gain_B = 0x400 * bg / BG_Ratio_Typical;
+              G_gain_R = 0x400 * rg / RG_Ratio_Typical;
+
+              if(G_gain_B > G_gain_R ) {
+                  B_gain = 0x400;
+                  G_gain = G_gain_B;
+                  R_gain = G_gain * RG_Ratio_Typical /rg;
+              }
+              else {
+                   R_gain = 0x400;
+                   G_gain = G_gain_R;
+                   B_gain = G_gain * BG_Ratio_Typical / bg;
+              }
+         }
+     }
+
+     ov5648_truly_cm8352_update_awb_gain(R_gain, G_gain, B_gain);
+
+     return 0;
+
+}
+
 #endif
 
 static int32_t ov5648_truly_cm8352_write_pict_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
@@ -900,7 +931,7 @@ static int32_t ov5648_truly_cm8352_write_prev_exp_gain(struct msm_sensor_ctrl_t 
 	uint32_t fl_lines = s_ctrl->curr_frame_length_lines;
 	uint8_t offset = s_ctrl->sensor_exp_gain_info->vert_offset;
 
-	CDBG(KERN_ERR "preview exposure setting 0x%x, 0x%x, %d",
+	CDBG(KERN_ERR "preview exposure setting 0x%x, 0x%x, %d\n",
 		 gain, line, line);
 
 	gain_lsb = (uint8_t) (gain);
