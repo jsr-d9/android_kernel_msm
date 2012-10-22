@@ -923,6 +923,8 @@ static int32_t ov5648_truly_cm8352_write_pict_exp_gain(struct msm_sensor_ctrl_t 
 }
 
 
+static int esposure_delay_en = 1;
+
 static int32_t ov5648_truly_cm8352_write_prev_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 						uint16_t gain, uint32_t line)
 {
@@ -992,6 +994,11 @@ static int32_t ov5648_truly_cm8352_write_prev_exp_gain(struct msm_sensor_ctrl_t 
 
 	s_ctrl->func_tbl->sensor_group_hold_off(s_ctrl);
 
+	if(esposure_delay_en)
+	{
+		msleep(200);
+		esposure_delay_en = 0;
+	}
 	return 0;
 }
 
@@ -1199,9 +1206,21 @@ int32_t ov5648_truly_cm8352_sensor_setting(struct msm_sensor_ctrl_t *s_ctrl,
 			0x4800, 0x4,
 			MSM_CAMERA_I2C_BYTE_DATA);
 
+		if(res == 1)
+		{
+			esposure_delay_en = 1;
+		}
+
 		if(!is_first_preview)
 		{
-			msleep(266);
+			if(res == 0)
+			{
+				msleep(266);
+			}
+			else
+			{
+				msleep(66);
+			}
 		}
 		else
 		{
