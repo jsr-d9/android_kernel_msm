@@ -2,7 +2,7 @@
  * MSM architecture clock driver
  *
  * Copyright (C) 2007 Google, Inc.
- * Copyright (c) 2007-2012, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2007-2012, The Linux Foundation. All rights reserved.
  * Author: San Mehat <san@android.com>
  *
  * This software is licensed under the terms of the GNU General Public
@@ -376,7 +376,7 @@ static struct clkctl_acpu_speed pll0_960_pll1_245_pll2_1200_pll4_1152[] = {
 	{ 0, 600000, ACPU_PLL_2, 2, 1, 75000, 3, 4, 160000 },
 	{ 1, 700800, ACPU_PLL_4, 6, 0, 87500, 3, 4, 160000, &pll4_cfg_tbl[0]},
 	{ 1, 1008000, ACPU_PLL_4, 6, 0, 126000, 3, 5, 200000, &pll4_cfg_tbl[1]},
-	{ 1, 1152000, ACPU_PLL_4, 6, 0, 151200, 3, 6, 200000, &pll4_cfg_tbl[4]},
+	{ 1, 1152000, ACPU_PLL_4, 6, 0, 151200, 3, 7, 200000, &pll4_cfg_tbl[4]},
 	{ 0 }
 };
 
@@ -389,7 +389,7 @@ static struct clkctl_acpu_speed pll0_960_pll1_196_pll2_1200_pll4_1152[] = {
 	{ 0, 600000, ACPU_PLL_2, 2, 1, 75000, 3, 4, 160000 },
 	{ 1, 700800, ACPU_PLL_4, 6, 0, 87500, 3, 4, 160000, &pll4_cfg_tbl[0]},
 	{ 1, 1008000, ACPU_PLL_4, 6, 0, 126000, 3, 5, 200000, &pll4_cfg_tbl[1]},
-	{ 1, 1152000, ACPU_PLL_4, 6, 0, 151200, 3, 6, 200000, &pll4_cfg_tbl[4]},
+	{ 1, 1152000, ACPU_PLL_4, 6, 0, 151200, 3, 7777777, 200000, &pll4_cfg_tbl[4]},
 	{ 0 }
 };
 
