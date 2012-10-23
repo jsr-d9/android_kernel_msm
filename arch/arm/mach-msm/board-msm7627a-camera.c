@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, The Linux Foundation. All Rights Reserved.
+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -431,7 +431,7 @@ static struct msm_camera_sensor_info msm_camera_sensor_ov5647_truly_cm6868_data 
 #ifdef CONFIG_OV5648_TRULY_CM8352
 static struct msm_actuator_info msm_act_main_cam_7_info = {
 	.board_info     = &msm_act_main_cam_i2c_info,
-	.cam_name   = MSM_ACTUATOR_MAIN_CAM_6,//af tunning file will update soon.
+	.cam_name   = MSM_ACTUATOR_MAIN_CAM_7,
 	.bus_id         = MSM_GSBI0_QUP_I2C_BUS_ID,
 	.vcm_pwd        = GPIO_NOT_CONFIGURED,
 	.vcm_enable     = 0,
@@ -693,7 +693,7 @@ static void __init msm7x27a_init_cam(void)
 		sensor_board_info_ov5648_truly_cm8352.cam_vreg = ov5648_truly_cm8352_gpio_vreg;
 		sensor_board_info_ov5648_truly_cm8352.num_vreg = ARRAY_SIZE(ov5648_truly_cm8352_gpio_vreg);
 		msm_act_main_cam_7_info.vcm_pwd = GPIO_SKUD_CAM_5MP_CAM_VCM_PWDN;
-		msm_act_main_cam_7_info.vcm_enable = 0;
+		msm_act_main_cam_7_info.vcm_enable = 1;
 		msm_camera_sensor_ov5648_truly_cm8352_data.sensor_reset=GPIO_SKUD_CAM_5MP_CAMIF_RESET;
 		msm_camera_sensor_ov5648_truly_cm8352_data.sensor_pwd = GPIO_SKUD_CAM_5MP_SHDN_N;
 		sensor_board_info_ov5648_truly_cm8352.mount_angle = 90;
