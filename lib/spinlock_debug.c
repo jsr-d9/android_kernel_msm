@@ -158,9 +158,6 @@ void do_raw_spin_unlock(raw_spinlock_t *lock)
 {
 	debug_spin_unlock(lock);
 	arch_spin_unlock(&lock->raw_lock);
-#ifdef CONFIG_MSM_SM_EVENT
-	SPIN_BUG_ON(raw_spin_is_locked(lock), lock, "still locked after unlock");
-#endif
 }
 
 static void rwlock_bug(rwlock_t *lock, const char *msg)
