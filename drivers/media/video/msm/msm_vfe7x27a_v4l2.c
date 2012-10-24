@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2012 The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -625,10 +625,9 @@ static void vfe_7x_ops(void *driver_data, unsigned id, size_t len,
 					msm_adsp_write(vfe_mod,
 							QDSP_CMDQUEUE,
 							cmd_data, len);
-					if (!vfe2x_ctrl->zsl_mode) {
-						kfree(data);
-						return;
-					}
+
+					kfree(data);
+					return;
 				}
 			} else { /* Live snapshot */
 				spin_unlock_irqrestore(
