@@ -112,7 +112,8 @@
 
 struct isl29028_data{
 	struct i2c_client *client;
-	struct input_dev *input;
+	struct input_dev *proximity_input_dev;
+	struct input_dev *light_input_dev;
 	struct delayed_work als_work;
 	struct delayed_work prox_work;
 	int prox_interval;
@@ -325,7 +326,7 @@ static ssize_t light_enable_store(struct device *dev,
 		pr_err("%s: invalid value %d\n", __func__, *buf);
 		return -EINVAL;
 	}
-	PR_DEB("SYSFS_EN_PROX %d\n", new_value);
+	PR_DEB("SYSFS_EN_ALS %d\n", new_value);
 	mutex_lock(&als_lock);
 	sysfs_enable_als(new_value);
 	mutex_unlock(&als_lock);
@@ -353,11 +354,11 @@ static ssize_t proximity_enable_store(struct device *dev,
 }
 
 static struct device_attribute dev_attr_light_enable =
-	__ATTR(als_enable, S_IRUGO | S_IWUSR | S_IWGRP,
+	__ATTR(enable, S_IRUGO | S_IWUSR | S_IWGRP,
 	light_enable_show, light_enable_store);
 
 static struct device_attribute dev_attr_proximity_enable =
-	__ATTR(prox_enable, S_IRUGO | S_IWUSR | S_IWGRP,
+	__ATTR(enable, S_IRUGO | S_IWUSR | S_IWGRP,
 	proximity_enable_show, proximity_enable_store);
 
 static struct attribute *light_sysfs_attrs[] = {
@@ -395,17 +396,17 @@ static void prox_work_func(struct work_struct *work)
 
 	isl29028_prox_read(data->client, &val);
 	PR_DEB("############threshold =%d,prox_data val= %d\n",threshold ,val);
-
+	/* 0 is close, 1 is far */
 	if(val > threshold)
 		cm = 0;
 	else
-		cm = 9;
+		cm = 1;
 
 	if(pre_prox_cm != cm)
 	{
-		input_event(data->input, EV_MSC, MSC_RAW, cm|ID_TYPE_PROX);
-		input_sync(data->input);
 		PR_DEB("############prox_data cm = %d\n",cm);
+		input_report_abs(data->proximity_input_dev, ABS_DISTANCE, cm);
+		input_sync(data->proximity_input_dev);
 	}
 	pre_prox_cm = cm;
 	PR_DEB("-ISL29028-prox-msecs=%d\n",(int)msecs_to_jiffies(data->prox_interval));
@@ -442,10 +443,11 @@ static void als_work_func(struct work_struct *work)
 		level = ISL_LUX_LEVELS -1;
 	}
 
+	PR_DEB("@@@@@@@@@@@@@@@@als_level = %d\n",level);
+	input_report_abs(data->light_input_dev, ABS_MISC, (int)val);
+	input_sync(data->light_input_dev);
+
 	if (level != pre_lux_level) {
-		input_event(data->input, EV_MSC, MSC_RAW, level|ID_TYPE_LIGHT);
-		input_sync(data->input);
-		PR_DEB("@@@@@@@@@@@@@@@@als_level = %d\n",level);
 		pre_lux_level =level;
 	}
 	PR_DEB("als-msecs=%d\n",(int)msecs_to_jiffies(data->als_interval));
@@ -474,6 +476,7 @@ static int __devinit isl29028_probe(struct i2c_client *client,
 				   const struct i2c_device_id *id)
 {
 	int err = 0;
+	struct input_dev *input_dev;
 	PR_DEB("isl29028_probe\n");
 
 	data = kzalloc(sizeof(struct isl29028_data), GFP_KERNEL);
@@ -486,43 +489,63 @@ static int __devinit isl29028_probe(struct i2c_client *client,
 
 	dev_info(&client->dev, "support ver. %s enabled\n", DRIVER_VERSION);
 
-	data->input = input_allocate_device();
-	if (data->input == NULL) {
-			err = -ENOMEM;
-			dev_err(&data->client->dev, "input device allocate failed\n");
-			goto exit0;
+	/* allocate proximity input_device */
+	input_dev = input_allocate_device();
+	if (input_dev == NULL) {
+		err = -ENOMEM;
+		dev_err(&data->client->dev, "proximity input device allocate failed\n");
+		goto exit0;
 	}
-	set_bit(EV_MSC, data->input->evbit);   
-	set_bit(MSC_RAW, data->input->mscbit);
-	data->input->name = "isl29028";
-	data->input->phys = "isl29028/input0";
-	data->input->id.bustype = BUS_HOST;
-	data->input->id.vendor = 0x0001;
-	data->input->id.product = 0x0001;
-	data->input->id.version = 0x0100;
+	input_set_drvdata(input_dev, data);
+	input_dev->name = "proximity";
+	input_set_capability(input_dev, EV_ABS, ABS_DISTANCE);
+	input_set_abs_params(input_dev, ABS_DISTANCE, 0, 1, 0, 0);
 
-	err = input_register_device(data->input);
+	PR_DEB("registering proximity input device\n");
+	err = input_register_device(input_dev);
 	if (err) {
-			dev_err(&data->client->dev,
-				"unable to register input polled device %s\n",
-				data->input->name);
-			goto exit1;
+		pr_err("%s: could not register input device\n", __func__);
+		goto exit1;
 	}
-	input_set_drvdata(data->input, data);
-
-	/* create sysfs interface */
-	err = sysfs_create_group(&data->input->dev.kobj, &light_attribute_group);
-	if (err)
+	data->proximity_input_dev = input_dev;
+	/* create proximity sysfs interface */
+	err = sysfs_create_group(&input_dev->dev.kobj, &proximity_attribute_group);
+	if (err) {
+		pr_err("%s: could not create sysfs group\n", __func__);
 		goto exit2;
-	err = sysfs_create_group(&data->input->dev.kobj, &proximity_attribute_group);
-	if (err)
+	}
+
+	/* allocate light input_device */
+	input_dev = input_allocate_device();
+	if (input_dev == NULL) {
+		err = -ENOMEM;
+		dev_err(&data->client->dev, "light input device allocate failed\n");
+		goto exit2;
+	}
+	input_set_drvdata(input_dev, data);
+	input_dev->name = "light";
+	input_set_capability(input_dev, EV_ABS, ABS_MISC);
+	input_set_abs_params(input_dev, ABS_MISC, 0, 1, 0, 0);
+
+	PR_DEB("registering light input device\n");
+	err = input_register_device(input_dev);
+	if (err) {
+		pr_err("%s: could not register input device\n", __func__);
 		goto exit3;
+	}
+	data->light_input_dev = input_dev;
+	/* create proximity sysfs interface */
+	err = sysfs_create_group(&input_dev->dev.kobj, &light_attribute_group);
+	if (err) {
+		pr_err("%s: could not create sysfs group\n", __func__);
+		goto exit4;
+	}
 
 	wq = create_workqueue("isl29028_workqueue");
 	if (wq == NULL) {
 		PR_DEB("can't create a workqueue\n");
 		err = -1;
-		goto exit3;
+		goto exit4;
 	}
 	INIT_DELAYED_WORK(&data->prox_work, prox_work_func);
 	INIT_DELAYED_WORK(&data->als_work, als_work_func);
@@ -532,7 +555,7 @@ static int __devinit isl29028_probe(struct i2c_client *client,
 	/*isl29028 init*/
 	err = isl29028_init_client(client);
 	if(err)
-		goto exit4;
+		goto exit5;
 
 	/*init mutex for prox */
         mutex_init(&prox_lock);
@@ -553,15 +576,18 @@ static int __devinit isl29028_probe(struct i2c_client *client,
 	dev_info(&client->dev, "sensor driver probe successful\n");
 	goto exit;
 
-exit4:
+exit5:
 	destroy_workqueue(wq);
+exit4:
+	sysfs_remove_group(&data->light_input_dev->dev.kobj, &light_attribute_group);
 exit3:
-	sysfs_remove_group(&client->dev.kobj, &proximity_attribute_group);
+	input_unregister_device(data->light_input_dev);
+	input_free_device(data->light_input_dev);
 exit2:
-	sysfs_remove_group(&client->dev.kobj, &light_attribute_group);
+	sysfs_remove_group(&data->proximity_input_dev->dev.kobj, &proximity_attribute_group);
 exit1:
-	input_unregister_device(data->input);
-	input_free_device(data->input);
+	input_unregister_device(data->proximity_input_dev);
+	input_free_device(data->proximity_input_dev);
 exit0:
 	kfree(data);
 
@@ -590,8 +616,10 @@ static int __devexit isl29028_remove(struct i2c_client *client)
         mutex_destroy(&prox_lock);
         mutex_destroy(&als_lock);
 
-	input_unregister_device(data->input);
-	input_free_device(data->input);
+	input_unregister_device(data->proximity_input_dev);
+	input_unregister_device(data->light_input_dev);
+	input_free_device(data->proximity_input_dev);
+	input_free_device(data->light_input_dev);
 
 	wake_lock_destroy(&data->prox_wake_lock);
 	kfree(data);
