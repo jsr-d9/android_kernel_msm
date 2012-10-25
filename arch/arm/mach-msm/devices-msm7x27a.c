@@ -1858,16 +1858,21 @@ static void __init msm_cpr_init(void)
 		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
 	}
 
-	/* Temporary change until devices have their floor_fuse bits blown */
-	msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1100000;
-	msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1200000;
+	/* QRD ES 8X25 sample: Temporary change until devices have their floor_fuse bits blown */
+	if(cpr_info->pvs_fuse >= 0x2){
+		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1100000;
+		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
+	} else {
+		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1150000;
+		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1200000;
+	}
 
-	pr_debug("%s: cpr: ring_osc: 0x%x\n", __func__,
+	pr_info("%s: cpr: ring_osc: 0x%x\n", __func__,
 		msm_cpr_mode_data[TURBO_MODE].ring_osc);
 	pr_info("%s: cpr: turbo_quot: 0x%x\n", __func__, cpr_info->turbo_quot);
 	pr_info("%s: cpr: pvs_fuse: 0x%x\n", __func__, cpr_info->pvs_fuse);
 	pr_info("%s: cpr: floor_fuse: 0x%x\n", __func__, cpr_info->floor_fuse);
-	pr_debug("%s: cpr: nom_Vmin: %d, turbo_Vmin: %d\n", __func__,
+	pr_info("%s: cpr: nom_Vmin: %d, turbo_Vmin: %d\n", __func__,
 		msm_cpr_mode_data[TURBO_MODE].nom_Vmin,
 		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin);
 	kfree(cpr_info);
