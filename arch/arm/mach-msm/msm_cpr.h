@@ -179,6 +179,7 @@ struct msm_cpr_config {
 	int min_down_step;
 	uint32_t tgt_count_div_N; /* Target Cnt(Nom) = Target Cnt(Turbo) / N */
 	uint32_t floor;
+	uint32_t pvs_fuse;
 	uint32_t ceiling;
 	uint32_t sw_vlevel;
 	uint32_t up_threshold;

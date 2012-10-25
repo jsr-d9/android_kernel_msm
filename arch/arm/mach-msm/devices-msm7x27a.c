@@ -1758,6 +1758,7 @@ static struct msm_cpr_config msm_cpr_pdata = {
 	.cpr_mode_data = msm_cpr_mode_data,
 	.tgt_count_div_N = 1,
 	.floor = 0,
+	.pvs_fuse = 0,
 	.ceiling = 40,
 	.sw_vlevel = 20,
 	.up_threshold = 1,
@@ -1875,6 +1876,10 @@ static void __init msm_cpr_init(void)
 	pr_info("%s: cpr: nom_Vmin: %d, turbo_Vmin: %d\n", __func__,
 		msm_cpr_mode_data[TURBO_MODE].nom_Vmin,
 		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin);
+
+	/*add this for debug the phone is which type*/
+	msm_cpr_pdata.pvs_fuse = cpr_info->pvs_fuse;
+	msm_cpr_pdata.floor = cpr_info->floor_fuse;
 	kfree(cpr_info);
 
 	if (msm8625_cpu_id() == MSM8625A)
