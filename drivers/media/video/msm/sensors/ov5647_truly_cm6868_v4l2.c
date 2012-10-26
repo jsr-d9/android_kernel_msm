@@ -177,7 +177,7 @@ static struct msm_camera_i2c_reg_conf ov5647_truly_cm6868_video_90fps_settings[]
 
 static struct msm_camera_i2c_reg_conf ov5647_truly_cm6868_zsl_settings[] = {
 	{0x3035, 0x21},
-	{0x3036, 0x2f},
+	{0x3036, 0x4f},
 	{0x3821, 0x06},
 	{0x3820, 0x00},
 	{0x3612, 0x0b},
