@@ -54,7 +54,7 @@ static bool enable = 1;
 module_param(enable, bool, 0644);
 MODULE_PARM_DESC(enable, "CPR Enable");
 
-static int msm_cpr_debug_mask = 0x3;
+static int msm_cpr_debug_mask = 0x1;
 module_param_named(
 	debug_mask, msm_cpr_debug_mask, int, S_IRUGO | S_IWUSR
 );
@@ -367,9 +367,12 @@ cpr_up_event_handler(struct msm_cpr *cpr, uint32_t new_volt)
 		cpr_irq_clr_and_nack(cpr, BIT(4) | BIT(0));
 		return;
 	}
-
-	msm_cpr_debug(MSM_CPR_DEBUG_STEPS,
-		"(railway_voltage: %d uV)\n", set_volt_uV);
+	if(cpr->prev_volt_uV != set_volt_uV){
+		printk("Current cpr chip the floor_fuse=%d pvs_fuse=%d RBCPR_GCNT_TARGET(%d): = 0x%x \n",
+				cpr->config->floor, cpr->config->pvs_fuse,	cpr->curr_osc, readl_relaxed(cpr->base +
+					RBCPR_GCNT_TARGET(cpr->curr_osc)) & TARGET_M);
+		printk("cur_volt %d uV (railway_voltage: %d uV)\n",cpr->prev_volt_uV, set_volt_uV);
+	}
 	cpr->prev_volt_uV = set_volt_uV;
 
 	cpr->max_volt_set = (set_volt_uV == cpr->cur_Vmax) ? 1 : 0;
@@ -412,8 +415,13 @@ cpr_dn_event_handler(struct msm_cpr *cpr, uint32_t new_volt)
 		return;
 	}
 
-	msm_cpr_debug(MSM_CPR_DEBUG_STEPS,
-		"(railway_voltage: %d uV)\n", set_volt_uV);
+	if(cpr->prev_volt_uV != set_volt_uV){
+		printk("Current cpr chip the floor_fuse=%d pvs_fuse=%d RBCPR_GCNT_TARGET(%d): = 0x%x \n",
+				cpr->config->floor, cpr->config->pvs_fuse,	cpr->curr_osc, readl_relaxed(cpr->base +
+					RBCPR_GCNT_TARGET(cpr->curr_osc)) & TARGET_M);
+		printk("cur_volt %d uV (railway_voltage: %d uV)\n",cpr->prev_volt_uV, set_volt_uV);
+	}
+
 	cpr->prev_volt_uV = set_volt_uV;
 
 	cpr->max_volt_set = 0;
@@ -460,11 +468,13 @@ static void cpr_set_vdd(struct msm_cpr *cpr, enum cpr_action action)
 	msm_cpr_debug(MSM_CPR_DEBUG_STEPS,
 		"RBCPR_RESULT_0 Busy_b19=%d\n", (cpr_read_reg(cpr,
 				RBCPR_RESULT_0) >> 19) & 0x1);
+	msm_cpr_debug(MSM_CPR_DEBUG_STEPS,
+		"cpr chip the floor_fuse=%d pvs_fuse=%d\n", cpr->config->floor, cpr->config->pvs_fuse);
 
 	error_step &= 0xF;
 	curr_volt = regulator_get_voltage(cpr->vreg_cx);
 	msm_cpr_debug(MSM_CPR_DEBUG_STEPS,
-		"Current voltage=%d\n", curr_volt);
+			"Current voltage=%d\n", curr_volt);
 
 	if (action == UP) {
 		/* Clear IRQ, ACK and return if Vdd already at Vmax */
