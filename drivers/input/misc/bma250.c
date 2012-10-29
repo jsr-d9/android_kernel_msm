@@ -516,9 +516,9 @@ static void bma250_work_func(struct work_struct *work)
 	unsigned long delay = msecs_to_jiffies(atomic_read(&bma250->delay));
 
 	bma250_read_accel_xyz(bma250->bma250_client, &acc);
-	/*adjust the data output for sku1 compatible */
-	input_report_rel(bma250->input, REL_RX, acc.y * 4);
-	input_report_rel(bma250->input, REL_RY, -acc.x * 4);
+	/*adjust the data output for skud compatible */
+	input_report_rel(bma250->input, REL_RX, -acc.y * 4);
+	input_report_rel(bma250->input, REL_RY, acc.x * 4);
 	input_report_rel(bma250->input, REL_RZ, acc.z * 4);
 	input_sync(bma250->input);
 	mutex_lock(&bma250->value_mutex);
