@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2012, The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -798,10 +798,10 @@ ft5x06_virtual_keys_register(struct kobject *kobj,
 {
 	if (machine_is_msm8625q_skud()) {
 		return snprintf(buf, 200,
-			__stringify(EV_KEY) ":" __stringify(KEY_MENU)  ":67:1000:135:60"
-			":" __stringify(EV_KEY) ":" __stringify(KEY_HOME)   ":202:1000:135:60"
-			":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH) ":337:1000:135:60"
-			":" __stringify(EV_KEY) ":" __stringify(KEY_BACK)   ":472:1000:135:60"
+			__stringify(EV_KEY) ":" __stringify(KEY_HOME)  ":67:1000:135:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_MENU)   ":202:1000:135:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_BACK) ":337:1000:135:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH)   ":472:1000:135:60"
 			"\n");
 	} else {
 		return snprintf(buf, 200,
