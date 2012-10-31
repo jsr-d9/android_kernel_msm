@@ -1848,24 +1848,25 @@ static void __init msm_cpr_init(void)
 	msm_cpr_mode_data[TURBO_MODE].calibrated_uV =
 				msm_c2_pmic_mv[cpr_info->pvs_fuse & 0x1F];
 
-	if ((cpr_info->floor_fuse & 0x3) == 0x0) {
-		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1000000;
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
-	} else if ((cpr_info->floor_fuse & 0x3) == 0x1) {
-		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1050000;
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
-	} else if ((cpr_info->floor_fuse & 0x3) == 0x2) {
-		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1100000;
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
-	}
-
 	/* QRD ES 8X25 sample: Temporary change until devices have their floor_fuse bits blown */
-	if(cpr_info->pvs_fuse >= 0x2){
+	if(cpr_info->pvs_fuse == 0x2){
 		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1100000;
 		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
-	} else {
+	} else if (cpr_info->pvs_fuse < 0x2 && cpr_info->pvs_fuse >= 0) {
 		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1150000;
 		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1200000;
+	} else {
+	/*others use the floor fuse for CS chipset*/
+		if ((cpr_info->floor_fuse & 0x3) == 0x0) {
+			msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1000000;
+			msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
+		} else if ((cpr_info->floor_fuse & 0x3) == 0x1) {
+			msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1050000;
+			msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
+		} else if ((cpr_info->floor_fuse & 0x3) == 0x2) {
+			msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1100000;
+			msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
+		}
 	}
 
 	pr_info("%s: cpr: ring_osc: 0x%x\n", __func__,
