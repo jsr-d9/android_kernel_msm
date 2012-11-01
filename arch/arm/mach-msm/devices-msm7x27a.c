@@ -1868,8 +1868,25 @@ static void __init msm_cpr_init(void)
 		}
 	}
 
+	/* Temporary fix for Quot deficiency on some pre-CS parts which turbo_quot <= 50,some bad chip */
+	if (cpr_info->turbo_quot <= 50) {
+		if (cpr_info->pvs_fuse <= 0x6) {
+			msm_cpr_pdata.max_quot += (47 * 10);
+			if (msm_cpr_pdata.max_quot > 1470)
+				msm_cpr_pdata.max_quot = 1470;
+		} else if (cpr_info->pvs_fuse <= 0xF) {
+			msm_cpr_pdata.max_quot += (43 * 10);
+			if (msm_cpr_pdata.max_quot > 1430)
+				msm_cpr_pdata.max_quot = 1430;
+		} else {
+			msm_cpr_pdata.max_quot += (38 * 10);
+			if (msm_cpr_pdata.max_quot > 1380)
+				msm_cpr_pdata.max_quot = 1380;
+		}
+	}
+
 	pr_info("%s: cpr: ring_osc: 0x%x\n", __func__,
-		msm_cpr_mode_data[TURBO_MODE].ring_osc);
+       msm_cpr_mode_data[TURBO_MODE].ring_osc);
 	pr_info("%s: cpr: turbo_quot: 0x%x\n", __func__, cpr_info->turbo_quot);
 	pr_info("%s: cpr: pvs_fuse: 0x%x\n", __func__, cpr_info->pvs_fuse);
 	pr_info("%s: cpr: floor_fuse: 0x%x\n", __func__, cpr_info->floor_fuse);
