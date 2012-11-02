@@ -341,6 +341,54 @@ static struct msm_camera_sensor_info msm_camera_sensor_ov7695_data = {
 };
 #endif
 
+#ifdef CONFIG_OV7695_RAW
+static struct gpio ov7695_raw_cam_req_gpio_skud[] = {
+	{GPIO_SKUD_CAM_1MP_PWDN, GPIOF_DIR_OUT, "CAM_VGA_SHDN"},
+};
+
+static struct msm_gpio_set_tbl ov7695_raw_cam_gpio_set_tbl_skud[] = {
+	{GPIO_SKUD_CAM_1MP_PWDN, GPIOF_OUT_INIT_LOW, 5000},
+	{GPIO_SKUD_CAM_1MP_PWDN, GPIOF_OUT_INIT_HIGH, 5000},
+};
+static struct msm_camera_gpio_conf skud_gpio_conf_ov7695_raw = {
+	.cam_gpio_req_tbl = ov7695_raw_cam_req_gpio_skud,
+	.cam_gpio_req_tbl_size = ARRAY_SIZE(ov7695_raw_cam_req_gpio_skud),
+	.cam_gpio_set_tbl = ov7695_raw_cam_gpio_set_tbl_skud,
+	.cam_gpio_set_tbl_size = ARRAY_SIZE(ov7695_raw_cam_gpio_set_tbl_skud),
+	.camera_off_table = camera_off_gpio_table,
+	.camera_on_table = camera_on_gpio_table,
+	.gpio_no_mux = 1,
+};
+
+static struct camera_vreg_t ov7695_raw_gpio_vreg[] = {
+	{"ldo12", REG_LDO, 2700000, 3300000, 0},
+	{"smps3", REG_LDO, 1800000, 1800000, 0},
+};
+static struct msm_camera_sensor_platform_info sensor_board_info_ov7695_raw = {
+	.mount_angle = 90,
+	.cam_vreg = msm_cam_vreg,
+	.num_vreg = ARRAY_SIZE(msm_cam_vreg),
+	.gpio_conf = &skud_gpio_conf_ov7695_raw,
+};
+
+static struct msm_camera_sensor_flash_data flash_ov7695_raw = {
+	.flash_type     = MSM_CAMERA_FLASH_NONE,
+};
+
+static struct msm_camera_sensor_info msm_camera_sensor_ov7695_raw_data = {
+	.sensor_name	    = "ov7695_raw",
+	.sensor_reset_enable    = 0,
+	.sensor_reset	   = GPIO_NOT_CONFIGURED,
+	.sensor_pwd	     = GPIO_NOT_CONFIGURED,
+	.pdata			= &msm_camera_device_data_csi0[0],
+	.flash_data	     = &flash_ov7695_raw,
+	.sensor_platform_info   = &sensor_board_info_ov7695_raw,
+	.csi_if		 = 1,
+	.camera_type = FRONT_CAMERA_2D,
+	.sensor_type = BAYER_SENSOR,
+};
+#endif
+
 #ifdef CONFIG_OV5647
 
 static struct msm_actuator_info msm_act_main_cam_5_info = {
@@ -609,6 +657,10 @@ static void __init msm7x27a_init_cam(void)
 		sensor_board_info_ov7695.cam_vreg = NULL;
 		sensor_board_info_ov7695.num_vreg = 0;
 #endif
+#ifdef CONFIG_OV7695_RAW
+		sensor_board_info_ov7695_raw.cam_vreg = NULL;
+		sensor_board_info_ov7695_raw.num_vreg = 0;
+#endif
 #ifdef CONFIG_OV5647
 		sensor_board_info_ov5647.cam_vreg = NULL;
 		sensor_board_info_ov5647.num_vreg = 0;
@@ -708,6 +760,14 @@ static void __init msm7x27a_init_cam(void)
 		sensor_board_info_ov7695.gpio_conf = &skud_gpio_conf_ov7695;
 		sensor_board_info_ov7695.mount_angle = 90;
 #endif
+#ifdef CONFIG_OV7695_RAW
+		sensor_board_info_ov7695_raw.cam_vreg = ov7695_raw_gpio_vreg;
+		sensor_board_info_ov7695_raw.num_vreg = ARRAY_SIZE(ov7695_raw_gpio_vreg);
+		msm_camera_sensor_ov7695_raw_data.vcm_pwd = 0;
+		msm_camera_sensor_ov7695_raw_data.vcm_enable = 0;
+		sensor_board_info_ov7695_raw.gpio_conf = &skud_gpio_conf_ov7695_raw;
+		sensor_board_info_ov7695_raw.mount_angle = 90;
+#endif
 	}
 
 	platform_device_register(&msm_camera_server);
@@ -799,6 +859,12 @@ static struct i2c_board_info i2c_camera_devices_skud[] = {
 	{
 		I2C_BOARD_INFO("ov7695", 0x21 << 1),
 		.platform_data = &msm_camera_sensor_ov7695_data,
+	},
+#endif
+#ifdef CONFIG_OV7695_RAW
+	{
+		I2C_BOARD_INFO("ov7695_raw", 0x21 << 1),
+		.platform_data = &msm_camera_sensor_ov7695_raw_data,
 	},
 #endif
 #ifdef CONFIG_OV5648_TRULY_CM8352
