@@ -1888,7 +1888,9 @@ static void __init msm_cpr_init(void)
 	pr_info("%s: cpr: nom_Vmin: %d, turbo_Vmin: %d\n", __func__,
 		msm_cpr_mode_data[TURBO_MODE].nom_Vmin,
 		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin);
-
+	pr_info("%s: cpr: nom_Vmax: %d, turbo_Vmax: %d\n", __func__,
+		msm_cpr_mode_data[TURBO_MODE].nom_Vmax,
+		msm_cpr_mode_data[TURBO_MODE].turbo_Vmax);
 #if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
 	memset(msm_fuse_info, FUSE_INFO_LEN, 0);
 	fuse_len += sprintf(tmp_buf, "MSM_FUSE_TAG : ");
