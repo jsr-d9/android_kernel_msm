@@ -535,6 +535,9 @@ static struct regulator_consumer_supply vreg_consumers_EXT_2P85V[] = {
 	REGULATOR_SUPPLY("cam_ov7692_avdd", "0-0078"),
 	REGULATOR_SUPPLY("cam_ov8825_avdd", "0-000d"),
 	REGULATOR_SUPPLY("lcd_vdd", "mipi_dsi.1"),
+#ifdef CONFIG_OV5648_TRULY_CM8352
+	REGULATOR_SUPPLY("cam_ov5648_truly_cm8352_avdd", "0-0034"),
+#endif
 };
 
 static struct regulator_consumer_supply vreg_consumers_EXT_1P8V[] = {
@@ -543,6 +546,9 @@ static struct regulator_consumer_supply vreg_consumers_EXT_1P8V[] = {
 	REGULATOR_SUPPLY("cam_ov7692_vdd", "0-0078"),
 	REGULATOR_SUPPLY("cam_ov8825_vdd", "0-000d"),
 	REGULATOR_SUPPLY("lcd_vddi", "mipi_dsi.1"),
+#ifdef CONFIG_OV5648_TRULY_CM8352
+	REGULATOR_SUPPLY("cam_ov5648_truly_cm8352_vdd", "0-0034"),
+#endif
 };
 
 /* GPIO regulator constraints */
