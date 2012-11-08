@@ -16,7 +16,6 @@
 #define __ARCH_ARM_MACH_MSM_SMEM_IFACE_H
 
 #include <mach/msm_smsm.h>
-#include "smd_private.h"
 
 #define MAX_KEY_EVENTS 10
 #define MAX_SEC_KEY_PAYLOAD 32
@@ -39,6 +38,7 @@ struct cpr_info_type {
 	uint8_t turbo_quot; /* CPRFUSE[1:7] : TURBO QUOT*/
 	uint8_t pvs_fuse;   /* TURBO PVS FUSE */
 	uint8_t floor_fuse; /* Vmin Selection. b1: FAB_ID(2), b0: CPR_fuse[0] */
+	bool    disable_cpr;
 };
 
 //usb_device_info used only in save serialnum to SMEM:24bytes
