@@ -1187,7 +1187,10 @@ void __init qrd7627a_add_io_devices(void)
 
 #ifdef CONFIG_LEDS_TRICOLOR_FLAHSLIGHT
 	    /*tricolor leds init*/
-	platform_device_register(&msm_device_tricolor_leds);
-	tricolor_leds_gpio_setup();
+	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
+            || machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a()) {
+		platform_device_register(&msm_device_tricolor_leds);
+		tricolor_leds_gpio_setup();
+	}
 #endif
 }
