@@ -1851,13 +1851,9 @@ static void __init msm_cpr_init(void)
 	msm_cpr_mode_data[TURBO_MODE].calibrated_uV =
 				msm_c2_pmic_mv[cpr_info->pvs_fuse & 0x1F];
 
-	/* QRD ES 8X25 sample: Temporary change until devices have their floor_fuse bits blown */
-	if(cpr_info->pvs_fuse == 0x2){
-		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1100000;
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
-	} else if (cpr_info->pvs_fuse < 0x2 && cpr_info->pvs_fuse >= 0) {
-		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1150000;
-		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1200000;
+	/* QRD ES 8X25 sample: disable the CPR for ES sample */
+	if(cpr_info->pvs_fuse <= 0x4){
+		msm_cpr_pdata.disable_cpr = 1;
 	} else {
 	/*others use the floor fuse for CS chipset*/
 		if ((cpr_info->floor_fuse & 0x3) == 0x0) {
