@@ -924,6 +924,35 @@ static void __init ft5x06_touchpad_setup(void)
 				ARRAY_SIZE(ft5x06_device_info));
 }
 
+/* skud flash led and touch*/
+#define FLASH_LED_SKUD 34
+#define FLASH_LED_TORCH_SKUD 48
+
+static struct gpio_led gpio_flash_config_skud[] = {
+	{
+		.name = "flashlight",
+		.gpio = FLASH_LED_SKUD,
+	},
+	{
+		.name = "torch",
+		.gpio = FLASH_LED_TORCH_SKUD,
+	},
+};
+
+static struct gpio_led_platform_data gpio_flash_pdata_skud = {
+	.num_leds = ARRAY_SIZE(gpio_flash_config_skud),
+	.leds = gpio_flash_config_skud,
+};
+
+static struct platform_device gpio_flash_skud = {
+	.name          = "leds-gpio",
+	.id            = -1,
+	.dev           = {
+		.platform_data = &gpio_flash_pdata_skud,
+	},
+};
+/* end of skud flash led and touch*/
+
 #ifdef CONFIG_LEDS_TRICOLOR_FLAHSLIGHT
 
 #define LED_FLASH_EN1 13
@@ -1183,6 +1212,8 @@ void __init qrd7627a_add_io_devices(void)
 		platform_device_register(&tricolor_leds_pdev);
 	} else if (machine_is_msm8625q_skud()) {
 		platform_device_register(&pmic_mpp_leds_pdev_skud);
+		/* enable the skud flash and torch by gpio leds driver */
+		platform_device_register(&gpio_flash_skud);
 	}
 
 #ifdef CONFIG_LEDS_TRICOLOR_FLAHSLIGHT
