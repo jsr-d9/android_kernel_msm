@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -915,7 +915,8 @@ static void __init msm_add_footswitch_devices(void)
 static void __init add_platform_devices(void)
 {
 	if (machine_is_msm8625_evb() || machine_is_msm8625_qrd7()
-				|| machine_is_msm8625_qrd5() || machine_is_msm8625q_skud()) {
+				|| machine_is_msm8625_qrd5() || machine_is_msm8625q_skud()
+				|| machine_is_msm8625q_skue()) {
 		platform_add_devices(msm8625_evb_devices,
 				ARRAY_SIZE(msm8625_evb_devices));
 		platform_add_devices(qrd3_devices,
@@ -1160,6 +1161,17 @@ MACHINE_START(MSM8625_QRD5, "QRD MSM8625 QRD5")
 MACHINE_END
 
 MACHINE_START(MSM8625Q_SKUD, "QRD MSM8625Q SKUD")
+	.atag_offset	= 0x100,
+	.map_io		= msm8625_map_io,
+	.reserve	= msm8625_reserve,
+	.init_irq	= msm8625_init_irq,
+	.init_machine	= msm_qrd_init,
+	.timer		= &msm_timer,
+	.init_early	= qrd7627a_init_early,
+	.handle_irq	= gic_handle_irq,
+MACHINE_END
+
+MACHINE_START(MSM8625Q_SKUE, "QRD MSM8625Q SKUE")
 	.atag_offset	= 0x100,
 	.map_io		= msm8625_map_io,
 	.reserve	= msm8625_reserve,

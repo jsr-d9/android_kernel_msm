@@ -591,6 +591,14 @@ config MACH_MSM8625Q_SKUD
 	help
 	  Support for the Qualcomm MSM8625Q SKUD Reference Design.
 
+config MACH_MSM8625Q_SKUE
+	depends on ARCH_MSM8625
+	depends on !MSM_STACKED_MEMORY
+	default y
+	bool "MSM8625Q SKUE"
+	help
+	  Support for the Qualcomm MSM8625Q SKUE Reference Design.
+
 config MACH_MSM7X30_SURF
        depends on ARCH_MSM7X30
        depends on !MSM_STACKED_MEMORY

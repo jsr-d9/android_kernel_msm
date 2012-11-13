@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -155,6 +155,8 @@ static void gpio_sdc1_config(void)
 					|| machine_is_msm7627a_qrd3()
 					|| machine_is_msm8625_qrd7())
 		gpio_sdc1_hw_det = 42;
+	else if (machine_is_msm8625q_skue())
+		gpio_sdc1_hw_det = 27;
 }
 
 static struct regulator *sdcc_vreg_data[MAX_SDCC_CONTROLLER];
