@@ -274,7 +274,6 @@ static int __devinit mipi_hx8389b_lcd_probe(struct platform_device *pdev)
 
                 /* SKUD use PWM as backlight control method */
                 if(machine_is_msm8625q_skud()) {
-                        printk("rayz: machine_is_msm8625q_skud\n");
                         mipi_hx8389b_bl_ctrl = 1;
                 }
 
