@@ -1333,10 +1333,15 @@ static int mipi_dsi_panel_qrd3_power(int on)
 		msleep(20);
 
 	} else {
-		gpio_tlmm_config(GPIO_CFG(GPIO_QRD3_LCD_BACKLIGHT_EN, 0,
+                /* FIXME: GPIO_QRD3_LCD_BACKLIGHT_EN can't be set as
+                 * input by below statement, so just keep it output low
+                 */
+                gpio_set_value_cansleep(GPIO_QRD3_LCD_BACKLIGHT_EN, 0);
+#if 0
+                gpio_tlmm_config(GPIO_CFG(GPIO_QRD3_LCD_BACKLIGHT_EN, 0,
 			GPIO_CFG_INPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),
 			GPIO_CFG_DISABLE);
-
+#endif
 		gpio_tlmm_config(GPIO_CFG(GPIO_QRD3_LCD_BRDG_RESET_N, 0,
 			GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
 			GPIO_CFG_DISABLE);
