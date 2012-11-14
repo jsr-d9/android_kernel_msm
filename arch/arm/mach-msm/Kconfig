@@ -1300,6 +1300,12 @@ config MSM_RPC_SDIO_DEBUG
 	help
 	  Support for debugging SDIO XPRT
 
+config MSM_FUSE_INFO_DEBUG 
+	default y
+	bool "MSM FUSE debug support"
+	help
+	  Support for debugging fuse info
+
 config MSM_SMD_DEBUG
 	depends on MSM_SMD
 	default y

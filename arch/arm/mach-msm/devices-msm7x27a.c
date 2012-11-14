@@ -30,6 +30,9 @@
 #include <asm/cacheflush.h>
 #include <mach/rpc_hsusb.h>
 #include <mach/socinfo.h>
+#include <linux/seq_file.h>
+#include <linux/proc_fs.h>
+#include <linux/module.h>
 
 #include "devices.h"
 #include "devices-msm7x2xa.h"
@@ -1789,11 +1792,19 @@ static struct platform_device msm8625_vp_device = {
 	.name           = "vp-regulator",
 	.id             = -1,
 };
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+#define FUSE_INFO_LEN 1024
+char msm_fuse_info[FUSE_INFO_LEN];
+#endif
 
 static void __init msm_cpr_init(void)
 {
 	struct cpr_info_type *cpr_info = NULL;
 	uint8_t ring_osc = 0;
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+	char tmp_buf[100] = "";
+	uint32_t fuse_len = 0; 
+#endif
 
 	cpr_info = kzalloc(sizeof(struct cpr_info_type), GFP_KERNEL);
 	if (!cpr_info) {
@@ -1894,6 +1905,31 @@ static void __init msm_cpr_init(void)
 		msm_cpr_mode_data[TURBO_MODE].nom_Vmin,
 		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin);
 
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+	memset(msm_fuse_info, FUSE_INFO_LEN, 0);
+	fuse_len += sprintf(tmp_buf, "MSM_FUSE_TAG : ");
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, socinfo_buf);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, "cpr: ring_osc: 0x%x ",msm_cpr_mode_data[TURBO_MODE].ring_osc);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, "cpr: turbo_quot: 0x%x ", cpr_info->turbo_quot);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, "cpr: floor_fuse: 0x%x ", cpr_info->floor_fuse);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, "cpr: pvs_fuse: 0x%x ", cpr_info->pvs_fuse);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, "cpr: nom_Vmin: %d, turbo_Vmin: %d", msm_cpr_mode_data[TURBO_MODE].nom_Vmin, msm_cpr_mode_data[TURBO_MODE].turbo_Vmin);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+#endif
+
 	/*add this for debug the phone is which type*/
 	msm_cpr_pdata.pvs_fuse = cpr_info->pvs_fuse;
 	msm_cpr_pdata.floor = cpr_info->floor_fuse;
@@ -1909,6 +1945,47 @@ static void __init msm_cpr_init(void)
 	platform_device_register(&msm8625_vp_device);
 	platform_device_register(&msm8625_device_cpr);
 }
+
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+#ifdef CONFIG_PROC_FS
+/*
+ * read /proc/fuseinfo to get some info about msm8x25 chip
+ */
+static int msm_fuse_proc_show(struct seq_file *m, void *v)
+{
+	seq_write(m, msm_fuse_info, strlen(msm_fuse_info));
+	return 0;
+}
+
+static int msm_fuse_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, msm_fuse_proc_show, NULL);
+}
+
+static const struct file_operations proc_msm_fuse_operations = {
+	.owner		= THIS_MODULE,
+	.open		= msm_fuse_proc_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+
+};
+
+static void fuse_init_procfs(void)
+{
+	if (!proc_create("fuseinfo", S_IRUSR, NULL,
+			 &proc_msm_fuse_operations))
+		pr_err("Failed to register fuse proc interface\n");
+}
+
+#else
+
+static inline void fuse_init_procfs(void)
+{
+}
+
+#endif /* CONFIG_PROC_FS */
+#endif
 
 static struct clk_lookup msm_clock_8625_dummy[] = {
 	CLK_DUMMY("core_clk",		adm_clk.c,	"msm_dmov", 0),
@@ -2042,6 +2119,10 @@ int __init msm7x2x_misc_init(void)
 		pl310_resources[1].start = INT_L2CC_INTR;
 
 	platform_device_register(&pl310_erp_device);
+
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+	fuse_init_procfs();
+#endif
 
 	if (msm_gpio_config_gps() < 0)
 		pr_err("Error for gpio config for GPS gpio\n");

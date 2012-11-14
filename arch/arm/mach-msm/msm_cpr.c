@@ -49,6 +49,10 @@
 
 /* Need platform device handle for suspend and resume APIs */
 static struct platform_device *cpr_pdev;
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+#define FUSE_INFO_LEN 1024
+extern char msm_fuse_info[FUSE_INFO_LEN];
+#endif
 
 static bool enable = 1;
 static bool disable_cpr;
@@ -897,6 +901,11 @@ static int __devinit msm_cpr_probe(struct platform_device *pdev)
 	void __iomem *base;
 	struct resource *mem;
 	struct msm_cpr_mode *chip_data;
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+	char tmp_buf[100] = "";
+	uint32_t fuse_len = strlen(msm_fuse_info); 
+	char *s = msm_fuse_info + fuse_len;
+#endif
 
 	if (!enable)
 		return -EPERM;
@@ -906,6 +915,12 @@ static int __devinit msm_cpr_probe(struct platform_device *pdev)
 		enable = false;
 		return -EIO;
 	}
+
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+	fuse_len += sprintf(tmp_buf, "the initial C2: %d \n", regulator_get_voltage(regulator_get(&pdev->dev, "vddx_cx")));
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(s, tmp_buf);
+#endif
 
 	if (pdata->disable_cpr == true) {
 		pr_err("CPR disabled by modem\n");
