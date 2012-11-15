@@ -1068,7 +1068,7 @@ static void mxt_input_report(struct mxt_data *data, int single_id)
 		input_report_abs(input_dev, ABS_Y, finger[single_id].y);
 		input_report_abs(input_dev,
 				 ABS_PRESSURE, finger[single_id].pressure);
-		if ((mxt_is_new_fw(data)) && (status & MXT_PRESS)
+		if ((!mxt_is_new_fw(data)) && (status & MXT_PRESS)
 		    && (data->recal_flag < MXT_RECALIB_DONE)) {
 			data->pre_finger[single_id] = finger[single_id];
 			if (finger_num == MXT_MAX_FINGER)
@@ -1077,7 +1077,7 @@ static void mxt_input_report(struct mxt_data *data, int single_id)
 				data->recal_flag = MXT_RECALIB_NG;
 		}
 	} else {
-		if ((mxt_is_new_fw(data)) && (data->recal_flag == MXT_RECALIB_NG)) {
+		if ((!mxt_is_new_fw(data)) && (data->recal_flag == MXT_RECALIB_NG)) {
 			if ((finger_num == 0) &&
 			    ((abs(finger[0].y - data->pre_finger[0].y) >
 			      MXT_Y_LIMIT_TO_CLOSE_T8)
@@ -1107,7 +1107,7 @@ static void mxt_handle_t6(struct mxt_data *data,
 
 	dev_warn(dev, "%s, T6 status: 0x%x.\n", __func__, status);
 	if (status & MXT_COMMAND_MSG_CALIBRATE) {
-		if ((mxt_is_new_fw(data)) && (data->recal_flag == MXT_RECALIB_DONE)
+		if ((!mxt_is_new_fw(data)) && (data->recal_flag == MXT_RECALIB_DONE)
 		    && cancel_delayed_work_sync(&data->delayed_work))
 			schedule_delayed_work(&data->delayed_work, 20 * HZ);
 		mxt_release_all(data);
