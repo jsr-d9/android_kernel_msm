@@ -788,8 +788,11 @@ static struct platform_device hs_pdev = {
 #define FT5X06_IRQ_GPIO		48
 #define FT5X06_RESET_GPIO	26
 
-#define FT5X06_IRQ_GPIO_QPR		122
-#define FT5X06_RESET_GPIO_QPR	26
+#define FT5X06_IRQ_GPIO_QPR_SKUD	122
+#define FT5X06_RESET_GPIO_QPR_SKUD	26
+
+#define FT5X06_IRQ_GPIO_QPR_SKUE	121
+#define FT5X06_RESET_GPIO_QPR_SKUE	26
 
 static ssize_t
 ft5x06_virtual_keys_register(struct kobject *kobj,
@@ -802,6 +805,13 @@ ft5x06_virtual_keys_register(struct kobject *kobj,
 			":" __stringify(EV_KEY) ":" __stringify(KEY_MENU)   ":202:1000:135:60"
 			":" __stringify(EV_KEY) ":" __stringify(KEY_BACK) ":337:1000:135:60"
 			":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH)   ":472:1000:135:60"
+			"\n");
+	} else if (machine_is_msm8625q_skue()) {
+		return snprintf(buf, 200,
+			__stringify(EV_KEY) ":" __stringify(KEY_HOME)  ":60:830:120:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_MENU)   ":180:830:120:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_BACK) ":300:830:120:60"
+			":" __stringify(EV_KEY) ":" __stringify(KEY_SEARCH)   ":420:830:120:60"
 			"\n");
 	} else {
 		return snprintf(buf, 200,
@@ -888,11 +898,17 @@ static void __init ft5x06_touchpad_setup(void)
 	int rc;
 
 	if (machine_is_msm8625q_skud()) {
-		ft5x06_platformdata.irq_gpio = FT5X06_IRQ_GPIO_QPR;
-		ft5x06_platformdata.reset_gpio = FT5X06_RESET_GPIO_QPR;
+		ft5x06_platformdata.irq_gpio = FT5X06_IRQ_GPIO_QPR_SKUD;
+		ft5x06_platformdata.reset_gpio = FT5X06_RESET_GPIO_QPR_SKUD;
 		ft5x06_platformdata.x_max = 540;
 		ft5x06_platformdata.y_max = 960;
-		ft5x06_device_info[0].irq = MSM_GPIO_TO_INT(FT5X06_IRQ_GPIO_QPR);
+		ft5x06_device_info[0].irq = MSM_GPIO_TO_INT(FT5X06_IRQ_GPIO_QPR_SKUD);
+	} else if (machine_is_msm8625q_skue()) {
+		ft5x06_platformdata.irq_gpio = FT5X06_IRQ_GPIO_QPR_SKUE;
+		ft5x06_platformdata.reset_gpio = FT5X06_RESET_GPIO_QPR_SKUE;
+		ft5x06_platformdata.x_max = 480;
+		ft5x06_platformdata.y_max = 800;
+		ft5x06_device_info[0].irq = MSM_GPIO_TO_INT(FT5X06_IRQ_GPIO_QPR_SKUE);
 	}
 
 	rc = gpio_tlmm_config(GPIO_CFG(ft5x06_platformdata.irq_gpio, 0,
@@ -1180,7 +1196,7 @@ void __init qrd7627a_add_io_devices(void)
 		i2c_register_board_info(MSM_GSBI1_QUP_I2C_BUS_ID,
 					mxt_device_info,
 					ARRAY_SIZE(mxt_device_info));
-	} else if (machine_is_msm7627a_qrd3() || machine_is_msm8625_qrd7() || machine_is_msm8625q_skud()) {
+	} else if (machine_is_msm7627a_qrd3() || machine_is_msm8625_qrd7() || machine_is_msm8625q_skud() || machine_is_msm8625q_skue()) {
 		ft5x06_touchpad_setup();
 	}
 
