@@ -769,8 +769,11 @@ static void * __init setup_dummy_socinfo(void)
 	return (void *) &dummy_socinfo;
 }
 
+char socinfo_buf[200];
 int __init socinfo_init(void)
 {
+	char *s = socinfo_buf;
+	memset(socinfo_buf, 0 , 200);
 	socinfo = smem_alloc(SMEM_HW_SW_BUILD_ID, sizeof(struct socinfo_v7));
 
 	if (!socinfo)
@@ -812,52 +815,57 @@ int __init socinfo_init(void)
 
 	switch (socinfo->v1.format) {
 	case 1:
-		pr_info("%s: v%u, id=%u, ver=%u.%u\n",
-			__func__, socinfo->v1.format, socinfo->v1.id,
+		sprintf(s, "v%u, id=%u, ver=%u.%u ",
+			socinfo->v1.format, socinfo->v1.id,
 			SOCINFO_VERSION_MAJOR(socinfo->v1.version),
 			SOCINFO_VERSION_MINOR(socinfo->v1.version));
+		pr_info("%s %s\n", __func__, socinfo_buf);
 		break;
 	case 2:
-		pr_info("%s: v%u, id=%u, ver=%u.%u, "
-			 "raw_id=%u, raw_ver=%u\n",
-			__func__, socinfo->v1.format, socinfo->v1.id,
+		sprintf(s,"v%u, id=%u, ver=%u.%u, "
+			 "raw_id=%u, raw_ver=%u",
+			socinfo->v1.format, socinfo->v1.id,
 			SOCINFO_VERSION_MAJOR(socinfo->v1.version),
 			SOCINFO_VERSION_MINOR(socinfo->v1.version),
 			socinfo->v2.raw_id, socinfo->v2.raw_version);
+		pr_info("%s %s\n", __func__, socinfo_buf);
 		break;
 	case 3:
-		pr_info("%s: v%u, id=%u, ver=%u.%u, "
-			 "raw_id=%u, raw_ver=%u, hw_plat=%u\n",
-			__func__, socinfo->v1.format, socinfo->v1.id,
+		sprintf(s,"v%u, id=%u, ver=%u.%u, "
+			 "raw_id=%u, raw_ver=%u, hw_plat=%u ",
+			socinfo->v1.format, socinfo->v1.id,
 			SOCINFO_VERSION_MAJOR(socinfo->v1.version),
 			SOCINFO_VERSION_MINOR(socinfo->v1.version),
 			socinfo->v2.raw_id, socinfo->v2.raw_version,
 			socinfo->v3.hw_platform);
+		pr_info("%s %s\n", __func__, socinfo_buf);
 		break;
 	case 4:
-		pr_info("%s: v%u, id=%u, ver=%u.%u, "
-			 "raw_id=%u, raw_ver=%u, hw_plat=%u, hw_plat_ver=%u\n",
-			__func__, socinfo->v1.format, socinfo->v1.id,
+		sprintf(s,"v%u, id=%u, ver=%u.%u, "
+			 "raw_id=%u, raw_ver=%u, hw_plat=%u, hw_plat_ver=%u",
+			socinfo->v1.format, socinfo->v1.id,
 			SOCINFO_VERSION_MAJOR(socinfo->v1.version),
 			SOCINFO_VERSION_MINOR(socinfo->v1.version),
 			socinfo->v2.raw_id, socinfo->v2.raw_version,
 			socinfo->v3.hw_platform, socinfo->v4.platform_version);
+		pr_info("%s %s\n", __func__, socinfo_buf);
 		break;
 	case 5:
-		pr_info("%s: v%u, id=%u, ver=%u.%u, "
-			 "raw_id=%u, raw_ver=%u, hw_plat=%u,  hw_plat_ver=%u\n"
-			" accessory_chip=%u\n", __func__, socinfo->v1.format,
+		sprintf(s,"v%u, id=%u, ver=%u.%u, "
+			 "raw_id=%u, raw_ver=%u, hw_plat=%u,  hw_plat_ver=%u"
+			" accessory_chip=%u\n", socinfo->v1.format,
 			socinfo->v1.id,
 			SOCINFO_VERSION_MAJOR(socinfo->v1.version),
 			SOCINFO_VERSION_MINOR(socinfo->v1.version),
 			socinfo->v2.raw_id, socinfo->v2.raw_version,
 			socinfo->v3.hw_platform, socinfo->v4.platform_version,
 			socinfo->v5.accessory_chip);
+		pr_info("%s %s\n", __func__, socinfo_buf);
 		break;
 	case 6:
-		pr_info("%s: v%u, id=%u, ver=%u.%u, "
-			 "raw_id=%u, raw_ver=%u, hw_plat=%u,  hw_plat_ver=%u\n"
-			" accessory_chip=%u hw_plat_subtype=%u\n", __func__,
+		sprintf(s,"v%u, id=%u, ver=%u.%u, "
+			 "raw_id=%u, raw_ver=%u, hw_plat=%u,  hw_plat_ver=%u"
+			" accessory_chip=%u hw_plat_subtype=%u\n",
 			socinfo->v1.format,
 			socinfo->v1.id,
 			SOCINFO_VERSION_MAJOR(socinfo->v1.version),
@@ -866,10 +874,10 @@ int __init socinfo_init(void)
 			socinfo->v3.hw_platform, socinfo->v4.platform_version,
 			socinfo->v5.accessory_chip,
 			socinfo->v6.hw_platform_subtype);
+		pr_info("%s %s\n", __func__, socinfo_buf);
 		break;
 	case 7:
-		pr_info("%s: v%u, id=%u, ver=%u.%u, raw_id=%u, raw_ver=%u, hw_plat=%u, hw_plat_ver=%u\n accessory_chip=%u, hw_plat_subtype=%u, pmic_model=%u, pmic_die_revision=%u\n",
-			__func__,
+		sprintf(s,"v%u, id=%u, ver=%u.%u, raw_id=%u, raw_ver=%u, hw_plat=%u, hw_plat_ver=%u\n accessory_chip=%u, hw_plat_subtype=%u, pmic_model=%u, pmic_die_revision=%u",
 			socinfo->v1.format,
 			socinfo->v1.id,
 			SOCINFO_VERSION_MAJOR(socinfo->v1.version),
@@ -880,12 +888,12 @@ int __init socinfo_init(void)
 			socinfo->v6.hw_platform_subtype,
 			socinfo->v7.pmic_model,
 			socinfo->v7.pmic_die_revision);
+		pr_info("%s %s\n", __func__, socinfo_buf);
 		break;
 	default:
 		pr_err("%s: Unknown format found\n", __func__);
 		break;
 	}
-
 	return 0;
 }
 
