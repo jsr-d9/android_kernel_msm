@@ -1051,7 +1051,7 @@ static struct pmic8029_led_platform_data leds_data_skud[] = {
 		.name = "button-backlight",
 		.which = PM_MPP_8,
 		.type = PMIC8029_DRV_TYPE_CUR,
-		.max.cur = PM_MPP__I_SINK__LEVEL_20mA,
+		.max.cur = PM_MPP__I_SINK__LEVEL_5mA,
 	},
 };
 

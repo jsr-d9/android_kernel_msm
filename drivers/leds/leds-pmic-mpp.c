@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2012, The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -35,6 +35,7 @@ static void pm_mpp_led_set(struct led_classdev *led_cdev,
 {
 	struct pmic_mpp_led_data *led;
 	int ret;
+	bool enable;
 
 	led = container_of(led_cdev, struct pmic_mpp_led_data, cdev);
 
@@ -43,18 +44,20 @@ static void pm_mpp_led_set(struct led_classdev *led_cdev,
 		return;
 	}
 
+	enable = value ? true : false;
+
 	if(value > led->max) {
 		value = led->max;
 	}
 
 	if(PMIC8029_DRV_TYPE_CUR == led->type) {
 		ret = pmic_secure_mpp_config_i_sink(led->which, value,
-				value ? PM_MPP__I_SINK__SWITCH_ENA :
+				enable ? PM_MPP__I_SINK__SWITCH_ENA :
 					PM_MPP__I_SINK__SWITCH_DIS);
 	} else {
 		ret = pmic_secure_mpp_control_digital_output(led->which,
 			value,
-			value ? PM_MPP__DLOGIC_OUT__CTRL_HIGH : PM_MPP__DLOGIC_OUT__CTRL_LOW);
+			enable ? PM_MPP__DLOGIC_OUT__CTRL_HIGH : PM_MPP__DLOGIC_OUT__CTRL_LOW);
 	}
 	if (ret)
 		dev_err(led_cdev->dev, "can't set mpp led\n");
