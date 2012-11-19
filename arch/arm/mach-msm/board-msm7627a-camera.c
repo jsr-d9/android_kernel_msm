@@ -184,10 +184,6 @@ static struct camera_vreg_t ov5648_truly_cm8352_gpio_vreg[] = {
 	{"ldo12", REG_LDO, 2700000, 3300000, 0},
 	{"smps3", REG_LDO, 1800000, 1800000, 0},
 };
-static struct camera_vreg_t ov5648_truly_cm8352_gpio_vreg_sku5[] = {
-	{"cam_ov5648_truly_cm8352_avdd", REG_GPIO, 0, 0, 0},
-	{"cam_ov5648_truly_cm8352_vdd", REG_GPIO, 0, 0, 0},
-};
 #endif
 #ifdef CONFIG_OV8825
 static struct camera_vreg_t ov8825_gpio_vreg[] = {
@@ -742,17 +738,6 @@ static void __init msm7x27a_init_cam(void)
 		msm_camera_sensor_ov8825_data.sensor_pwd = GPIO_SKU3_CAM_5MP_SHDN_N;
 		sensor_board_info_ov8825.mount_angle = 90;
 #endif
-#ifdef CONFIG_OV5648_TRULY_CM8352
-		sensor_board_info_ov5648_truly_cm8352.cam_vreg = ov5648_truly_cm8352_gpio_vreg_sku5;
-		sensor_board_info_ov5648_truly_cm8352.num_vreg = ARRAY_SIZE(ov5648_truly_cm8352_gpio_vreg_sku5);
-		msm_act_main_cam_7_info.vcm_pwd = GPIO_SKU3_CAM_5MP_CAM_DRIVER_PWDN;
-		msm_act_main_cam_7_info.vcm_enable = 1;
-		msm_camera_sensor_ov5648_truly_cm8352_data.sensor_reset=GPIO_SKU3_CAM_5MP_CAMIF_RESET;
-		msm_camera_sensor_ov5648_truly_cm8352_data.sensor_pwd = GPIO_SKU3_CAM_5MP_SHDN_N;
-		sensor_board_info_ov5648_truly_cm8352.mount_angle = 90;
-		msm_flash_src_ov5648_truly_cm8352._fsrc.ext_driver_src.led_en = 13;
-		msm_flash_src_ov5648_truly_cm8352._fsrc.ext_driver_src.led_flash_en = 32;
-#endif
 	}
 	else if(machine_is_msm8625q_skud())
 	{  //for SKUD
@@ -865,12 +850,6 @@ static struct i2c_board_info i2c_camera_devices_sku5[] = {
 	{
 		I2C_BOARD_INFO("ov7692", 0x78),
 		.platform_data = &msm_camera_sensor_ov7692_data,
-	},
-#endif
-#ifdef CONFIG_OV5648_TRULY_CM8352
-	{
-		I2C_BOARD_INFO("ov5648_truly_cm8352", 0x34),
-		.platform_data = &msm_camera_sensor_ov5648_truly_cm8352_data,
 	},
 #endif
 };
