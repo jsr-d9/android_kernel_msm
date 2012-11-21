@@ -1939,6 +1939,9 @@ int32_t ov5648_truly_cm8352_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 		pip_ov7695_ctrl(PIP_CRL_POWERDOWN, NULL);
 	}
 	/* PIP end */
+
+	usleep_range(5000, 5100);
+	gpio_direction_output(info->sensor_reset, 0);
 	usleep_range(5000, 5100);
 	msm_sensor_power_down(s_ctrl);
 	msleep(40);
