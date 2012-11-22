@@ -880,7 +880,7 @@ static int mxt_is_new_fw(struct mxt_data *data)
 {
 	const struct mxt_info *info = &data->info;
 
-	if ((info->variant_id == 0x18) && (info->build == 0x03))
+	if (info->variant_id == 0x18)
 		return 1;
 	else
 		return 0;
@@ -1106,8 +1106,11 @@ static void mxt_handle_t6(struct mxt_data *data,
 	u8 status = message->message[0];
 
 	dev_warn(dev, "%s, T6 status: 0x%x.\n", __func__, status);
+	if (mxt_is_new_fw(data))
+		return;
+
 	if (status & MXT_COMMAND_MSG_CALIBRATE) {
-		if ((!mxt_is_new_fw(data)) && (data->recal_flag == MXT_RECALIB_DONE)
+		if ((data->recal_flag == MXT_RECALIB_DONE)
 		    && cancel_delayed_work_sync(&data->delayed_work))
 			schedule_delayed_work(&data->delayed_work, 20 * HZ);
 		mxt_release_all(data);
