@@ -1860,44 +1860,28 @@ static void __init msm_cpr_init(void)
 	 * Boot up mode is by default Turbo.
 	 */
 	msm_cpr_mode_data[TURBO_MODE].calibrated_uV =
-				msm_c2_pmic_mv[cpr_info->pvs_fuse & 0x1F];
+		msm_c2_pmic_mv[cpr_info->pvs_fuse & 0x1F];
 
-	/* QRD ES 8X25 sample: disable the CPR for ES sample */
-	if(cpr_info->pvs_fuse <= 0x4){
-		msm_cpr_pdata.disable_cpr = 1;
-	} else {
 	/*others use the floor fuse for CS chipset*/
-		if ((cpr_info->floor_fuse & 0x3) == 0x0) {
-			msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1000000;
-			msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
-		} else if ((cpr_info->floor_fuse & 0x3) == 0x1) {
-			msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1050000;
-			msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
-		} else if ((cpr_info->floor_fuse & 0x3) == 0x2) {
-			msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1100000;
-			msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
-		}
+	if ((cpr_info->floor_fuse & 0x3) == 0x0) {
+		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1000000;
+		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
+	} else if ((cpr_info->floor_fuse & 0x3) == 0x1) {
+		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1050000;
+		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
+	} else if ((cpr_info->floor_fuse & 0x3) == 0x2) {
+		msm_cpr_mode_data[TURBO_MODE].nom_Vmin = 1100000;
+		msm_cpr_mode_data[TURBO_MODE].turbo_Vmin = 1100000;
 	}
 
 	/* Temporary fix for Quot deficiency on some pre-CS parts which turbo_quot <= 50,some bad chip */
-	if (cpr_info->turbo_quot <= 50) {
-		if (cpr_info->pvs_fuse <= 0x6) {
-			msm_cpr_pdata.max_quot += (47 * 10);
-			if (msm_cpr_pdata.max_quot > 1470)
-				msm_cpr_pdata.max_quot = 1470;
-		} else if (cpr_info->pvs_fuse <= 0xF) {
-			msm_cpr_pdata.max_quot += (43 * 10);
-			if (msm_cpr_pdata.max_quot > 1430)
-				msm_cpr_pdata.max_quot = 1430;
-		} else {
-			msm_cpr_pdata.max_quot += (38 * 10);
-			if (msm_cpr_pdata.max_quot > 1380)
-				msm_cpr_pdata.max_quot = 1380;
-		}
-	}
+//	if (cpr_info->turbo_quot <= 50) {
+//		pr_info("%s: this is bad cs chip, need disable the cpr\n", __func__);
+//		msm_cpr_pdata.disable_cpr = 1;
+//	}
 
-	pr_info("%s: cpr: ring_osc: 0x%x\n", __func__,
-       msm_cpr_mode_data[TURBO_MODE].ring_osc);
+	pr_info("%s: cpr: ring_osc: 0x%x, disable cpr %d\n", __func__,
+       msm_cpr_mode_data[TURBO_MODE].ring_osc, cpr_info->disable_cpr);
 	pr_info("%s: cpr: turbo_quot: 0x%x\n", __func__, cpr_info->turbo_quot);
 	pr_info("%s: cpr: pvs_fuse: 0x%x\n", __func__, cpr_info->pvs_fuse);
 	pr_info("%s: cpr: floor_fuse: 0x%x\n", __func__, cpr_info->floor_fuse);
