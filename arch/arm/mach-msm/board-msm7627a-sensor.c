@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2012, The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -254,6 +254,36 @@ static int ltr502_light_gpio_setup(void) {
 }
 #endif
 
+#ifdef  CONFIG_INPUT_LIS3DH
+
+#define GPIO_ACC_INT 28
+
+static struct i2c_board_info lis3dh_acc_i2c_info[] __initdata = {
+	{
+		I2C_BOARD_INFO("lis3dh", 0x19),
+		.irq = -1,
+	},
+};
+
+static struct msm_gpio lis3dh_acc_gpio_cfg_data[] = {
+	{
+		GPIO_CFG(GPIO_ACC_INT, 0, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_6MA),
+		"lis3dh_acc_int"
+	},
+};
+
+static int lis3dh_acc_gpio_setup(void) {
+	int ret = 0;
+	ret = msm_gpios_request_enable(lis3dh_acc_gpio_cfg_data,
+				 sizeof(lis3dh_acc_gpio_cfg_data)/sizeof(struct msm_gpio));
+	if( ret<0 )
+		printk(KERN_ERR "%s: Failed to obtain acc int GPIO %d. Code: %d\n",
+				__func__, GPIO_ACC_INT, ret);
+	//lis3dh_acc_i2c_info[0].irq = gpio_to_irq(GPIO_ACC_INT);
+	return ret;
+}
+#endif
+
 #ifdef CONFIG_SENSORS_AK8975
 
 static struct msm_gpio akm_gpio_cfg_data[] = {
@@ -350,6 +380,16 @@ void __init msm7627a_sensor_init(void)
 		i2c_register_board_info(MSM_GSBI0_QUP_I2C_BUS_ID,
 					isl29028_i2c_info,
 					ARRAY_SIZE(isl29028_i2c_info));
+	}
+#endif
+
+#ifdef CONFIG_INPUT_LIS3DH
+	if (machine_is_msm8625q_skue()) {
+		lis3dh_acc_gpio_setup();
+		pr_info("i2c_register_board_info LIS3DH ACC\n");
+		i2c_register_board_info(MSM_GSBI1_QUP_I2C_BUS_ID,
+					lis3dh_acc_i2c_info,
+					ARRAY_SIZE(lis3dh_acc_i2c_info));
 	}
 #endif
 
