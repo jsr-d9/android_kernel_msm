@@ -410,8 +410,8 @@ static struct msm_camera_i2c_reg_conf ov7695_raw_full_settings[] = {
 //	;42 3813 06
 //	; sub mirror
 	{0x0101, 0x01},
-//	{0x3811, 0x05},
-//	{0x3813, 0x06},
+	{0x3811, 0x05},
+	{0x3813, 0x06},
 
 	{0x034c, 0x02},	//; x output size = 640
 	{0x034d, 0x80},	//; x output size
@@ -420,7 +420,7 @@ static struct msm_camera_i2c_reg_conf ov7695_raw_full_settings[] = {
 	{0x0383, 0x01},	//; x odd inc
 	{0x4500, 0x25},	//; h sub sample off
 	{0x0387, 0x01},	//; y odd inc
-	{0x3820, 0x90},	//; v bin off            ####change to 0x94
+	{0x3820, 0x94},	//; v bin off            ####change to 0x94
 	{0x3014, 0x0f}, //
 	{0x301a, 0xf0}, //
 	{0x370a, 0x23}, //
@@ -432,8 +432,8 @@ static struct msm_camera_i2c_reg_conf ov7695_raw_full_settings[] = {
 	{0x0342, 0x02},	//; OV7695 HTS = 746
 	{0x0343, 0xea},	//; OV7695 HTS
 
-	{0x3503, 0x30}, // AGC/AEC on
-//	{0x3503, 0x33}, // AGC/AEC off
+//	{0x3503, 0x30}, // AGC/AEC on
+	{0x3503, 0x33}, // AGC/AEC off
 
 	{0x3a09, 0xa1},	//; B50
 	{0x3a0b, 0x86}, //; B60
@@ -526,9 +526,8 @@ static int32_t ov7695_raw_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	line &= 0xffff;
 	gain &= 0x01ff;
 
-	CDBG("####1croped, gainn=0x%x, line=0x%x\n",gain,line);
-#if 0
-//test
+	CDBG("####croped, gainn=0x%x, line=0x%x\n",gain,line);
+#if 1
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0104,
 		0x1, MSM_CAMERA_I2C_BYTE_DATA);
 
@@ -556,6 +555,7 @@ static int32_t ov7695_raw_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 		0x0, MSM_CAMERA_I2C_BYTE_DATA);
 #endif
 # if 0
+//test codes
 	msleep(50);
 	addr = 0x3500;
 	msm_camera_i2c_read(
