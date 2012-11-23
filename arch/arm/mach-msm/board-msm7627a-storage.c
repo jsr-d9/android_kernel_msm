@@ -156,7 +156,7 @@ static void gpio_sdc1_config(void)
 					|| machine_is_msm8625_qrd7())
 		gpio_sdc1_hw_det = 42;
 	else if (machine_is_msm8625q_skue())
-		gpio_sdc1_hw_det = 27;
+		gpio_sdc1_hw_det = 112;
 }
 
 static struct regulator *sdcc_vreg_data[MAX_SDCC_CONTROLLER];
