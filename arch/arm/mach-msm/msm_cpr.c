@@ -59,7 +59,7 @@ static bool disable_cpr;
 module_param(enable, bool, 0644);
 MODULE_PARM_DESC(enable, "CPR Enable");
 
-static int msm_cpr_debug_mask = 0x1;
+static int msm_cpr_debug_mask = 0x7;
 module_param_named(
 	debug_mask, msm_cpr_debug_mask, int, S_IRUGO | S_IWUSR
 );
@@ -916,12 +916,6 @@ static int __devinit msm_cpr_probe(struct platform_device *pdev)
 		return -EIO;
 	}
 
-#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
-	fuse_len += sprintf(tmp_buf, "the initial C2: %d \n", regulator_get_voltage(regulator_get(&pdev->dev, "vddx_cx")));
-	if(fuse_len < FUSE_INFO_LEN)
-		strcat(s, tmp_buf);
-#endif
-
 	if (pdata->disable_cpr == true) {
 		pr_err("CPR disabled by modem\n");
 		disable_cpr = true;
@@ -985,6 +979,12 @@ static int __devinit msm_cpr_probe(struct platform_device *pdev)
 		pr_err("could not get regulator: %d\n", res);
 		goto err_reg_get;
 	}
+
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+	fuse_len += sprintf(tmp_buf, "the initial C2: %d \n", regulator_get_voltage(cpr->vreg_cx));
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(s, tmp_buf);
+#endif
 
 	/* Assume current mode is TURBO Mode */
 	cpr->cpr_mode = TURBO_MODE;
