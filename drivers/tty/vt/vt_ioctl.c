@@ -119,7 +119,7 @@ void vt_event_post(unsigned int event, unsigned int old, unsigned int new)
  *	or 0 if some event such as a signal ended the wait.
  */
 
-static void vt_event_wait(struct vt_event_wait *vw)
+static void vt_event_wait(struct vt_event_wait *vw,  int want_console)
 {
 	unsigned long flags;
 	/* Prepare the event */
@@ -130,7 +130,7 @@ static void vt_event_wait(struct vt_event_wait *vw)
 	list_add(&vw->list, &vt_events);
 	spin_unlock_irqrestore(&vt_event_lock, flags);
 	/* Wait for it to pass */
-	wait_event_interruptible(vt_event_waitqueue, vw->done);
+	wait_event_interruptible(vt_event_waitqueue, vw->done ||(want_console == (fg_console + 1)));
 	/* Dequeue it */
 	spin_lock_irqsave(&vt_event_lock, flags);
 	list_del(&vw->list);
@@ -154,7 +154,7 @@ static int vt_event_wait_ioctl(struct vt_event __user *event)
 	if (vw.event.event & ~VT_MAX_EVENT)
 		return -EINVAL;
 
-	vt_event_wait(&vw);
+	vt_event_wait(&vw, -1);
 	/* If it occurred report it */
 	if (vw.done) {
 		if (copy_to_user(event, &vw.event, sizeof(struct vt_event)))
@@ -180,7 +180,7 @@ int vt_waitactive(int n)
 		if (n == fg_console + 1)
 			break;
 		vw.event.event = VT_EVENT_SWITCH;
-		vt_event_wait(&vw);
+		vt_event_wait(&vw, n);
 		if (vw.done == 0)
 			return -EINTR;
 	} while (vw.event.newev != n);
