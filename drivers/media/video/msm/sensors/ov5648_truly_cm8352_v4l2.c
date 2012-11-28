@@ -194,7 +194,7 @@ static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_pip_init_settings_mast
 	{0x5b02, 0x00},
 	{0x5b03, 0xf0},
 	//ISP AEC/AGC setting from here
-	{0x3503, 0x33}, //delay gain for one frame, and mannual enable.
+	{0x3503, 0x07}, //delay gain for one frame, and mannual enable.
 	{0x5000, 0x06}, // DPC On
 	{0x5001, 0x00}, // AWB ON
 	{0x5002, 0x41}, // AWB Gain ON
@@ -349,6 +349,7 @@ static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_pip_snap_settings_mast
 	{0x383b, 0xa8},//	; 80 PIP Location
 
 	{0x4004, 0x04},//	; black line number
+	{0x4005, 0x1a}, //BLC always update
 
 	{0x5b00, 0x02},
 	{0x5b01, 0x80},
@@ -427,6 +428,8 @@ static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_pip_prev_settings_mast
 	{0x383b, 0x88},
 
 	{0x4004, 0x02}, // black line number
+	{0x4005, 0x18},//BLC normal freeze
+
 	{0x5b00, 0x01},
 	{0x5b01, 0x40},
 	{0x5b02, 0x00},
@@ -1550,8 +1553,13 @@ static int32_t ov5648_truly_cm8352_write_pict_exp_gain(struct msm_sensor_ctrl_t 
 {
 
 	static uint16_t max_line = 1964;
+	uint32_t fix_line = s_ctrl->curr_frame_length_lines;
+	uint8_t offset = s_ctrl->sensor_exp_gain_info->vert_offset;
+
 	uint8_t gain_lsb, gain_hsb;
 	u8 intg_time_hsb, intg_time_msb, intg_time_lsb;
+	CDBG(KERN_ERR "curr_frame_length_lines is 0x%x, %d\r\n"
+		, fix_line, fix_line);
 
 	gain_lsb = (uint8_t) (gain);
 	gain_hsb = (uint8_t)((gain & 0x300)>>8);
@@ -1562,28 +1570,28 @@ static int32_t ov5648_truly_cm8352_write_pict_exp_gain(struct msm_sensor_ctrl_t 
 	if(CAM_MODE_NORMAL == ov5648_working_mode)
 	{
 		s_ctrl->func_tbl->sensor_group_hold_on(s_ctrl);
-		if (line > 1964) {
+		if (line > (fix_line - offset)) {
 			msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 				s_ctrl->sensor_output_reg_addr->frame_length_lines,
-				(uint8_t)((line+4) >> 8),
+				(uint8_t)((line + offset) >> 8),
 				MSM_CAMERA_I2C_BYTE_DATA);
 
 			msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 				s_ctrl->sensor_output_reg_addr->frame_length_lines + 1,
-				(uint8_t)((line+4) & 0x00FF),
+				(uint8_t)((line + offset) & 0x00FF),
 				MSM_CAMERA_I2C_BYTE_DATA);
-			max_line = line + 4;
-		} else if (max_line > 1968) {
+			max_line = line + offset;
+		} else if (max_line > fix_line) {
 			msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 				s_ctrl->sensor_output_reg_addr->frame_length_lines,
-				(uint8_t)(1968 >> 8),
+				(uint8_t)(fix_line >> 8),
 				MSM_CAMERA_I2C_BYTE_DATA);
 
 			 msm_camera_i2c_write(s_ctrl->sensor_i2c_client,
 				s_ctrl->sensor_output_reg_addr->frame_length_lines + 1,
-				(uint8_t)(1968 & 0x00FF),
+				(uint8_t)(fix_line & 0x00FF),
 				MSM_CAMERA_I2C_BYTE_DATA);
-				max_line = 1968;
+				max_line = fix_line;
 		}
 
 
