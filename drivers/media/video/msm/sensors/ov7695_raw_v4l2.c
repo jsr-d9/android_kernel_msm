@@ -539,13 +539,13 @@ static int32_t ov7695_raw_write_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x3500,
 		(line >> 12),MSM_CAMERA_I2C_BYTE_DATA);
 
-	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0104,
-		0x0, MSM_CAMERA_I2C_BYTE_DATA);
+//	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0104,
+//		0x0, MSM_CAMERA_I2C_BYTE_DATA);
 
-	msleep(50);
+//	msleep(50);
 
-	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0104,
-		0x1, MSM_CAMERA_I2C_BYTE_DATA);
+//	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x0104,
+//		0x1, MSM_CAMERA_I2C_BYTE_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x350b,
 		(gain & 0xff), MSM_CAMERA_I2C_BYTE_DATA);
 	msm_camera_i2c_write(s_ctrl->sensor_i2c_client, 0x350a,
