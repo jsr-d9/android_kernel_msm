@@ -410,11 +410,11 @@ static struct msm_camera_i2c_reg_conf ov7695_raw_full_settings[] = {
 //	;42 3813 06
 //	; sub mirror
 	{0x0101, 0x02},
-	{0x3811, 0x05},
-	{0x3813, 0x06},
+	{0x3811, 0x00},
+	{0x3813, 0x05},
 
-	{0x034c, 0x02},	//; x output size = 640
-	{0x034d, 0x80},	//; x output size
+	{0x034c, 0x02},	//; x output size = 656
+	{0x034d, 0x90},	//; x output size
 	{0x034e, 0x01},	//; y output size = 480
 	{0x034f, 0xe0},	//; y output size
 	{0x0383, 0x01},	//; x odd inc
@@ -445,8 +445,8 @@ static struct msm_camera_i2c_reg_conf ov7695_raw_full_settings[] = {
 	{0x3a15, 0x18},	//; max expo 50
 
 
-	{0x0348, 0x02},	//; x end = 639
-	{0x0349, 0x7f},	//; x end
+	{0x0348, 0x02},	//; x end = 655
+	{0x0349, 0x8f},	//; x end
 	{0x034a, 0x01},	//; y end = 479
 	{0x034b, 0xdf},	//; y end
  };
@@ -479,7 +479,7 @@ static struct v4l2_subdev_info ov7695_raw_subdev_info[] = {
 
 static struct msm_sensor_output_info_t ov7695_raw_dimensions[] = {
 	{
-		.x_output                = 0x280,
+		.x_output                = 0x290,
 		.y_output                = 0x1E0,
 		.line_length_pclk        = 0x1388,
 		.frame_length_lines      = 0x218,
