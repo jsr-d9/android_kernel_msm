@@ -500,8 +500,8 @@ static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_pip_prev_settings_mast
 static struct msm_camera_i2c_reg_conf ov5648_truly_cm8352_pip_preview_settings_slave[] =
 {
 	{0x3830, 0x40},
-	{0x3808, 0x02}, //Timing X output Size = 640
-	{0x3809, 0x80}, //Timing X output Size
+	{0x3808, 0x02}, //Timing X output Size = 656
+	{0x3809, 0x90}, //Timing X output Size
 	{0x380a, 0x01}, //Timing Y output Size = 480
 	{0x380b, 0xe0}, //Timing Y output Size
 
