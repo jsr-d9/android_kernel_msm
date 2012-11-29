@@ -4,6 +4,7 @@
  *  Copyright (C) 2007 Google Inc,
  *  Copyright (C) 2003 Deep Blue Solutions, Ltd, All Rights Reserved.
  *  Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+ *  Copyright (c) 2012 The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -87,6 +88,7 @@ static int msmsdcc_prep_xfer(struct msmsdcc_host *host, struct mmc_data
 
 static u64 dma_mask = DMA_BIT_MASK(32);
 static unsigned int msmsdcc_pwrsave = 1;
+static bool en_runtime_suspend = 1;
 
 static struct mmc_command dummy52cmd;
 static struct mmc_request dummy52mrq = {
@@ -6012,6 +6014,8 @@ msmsdcc_runtime_resume(struct device *dev)
 	return 0;
 }
 
+module_param_named(en_suspend, en_runtime_suspend, bool, S_IRUGO | S_IWUSR);
+
 static int msmsdcc_runtime_idle(struct device *dev)
 {
 	struct mmc_host *mmc = dev_get_drvdata(dev);
@@ -6020,8 +6024,10 @@ static int msmsdcc_runtime_idle(struct device *dev)
 	if (host->plat->is_sdio_al_client)
 		return 0;
 
-	/* Idle timeout is not configurable for now */
-	pm_schedule_suspend(dev, host->idle_tout_ms);
+        if (likely(en_runtime_suspend)) {
+		/* Idle timeout is not configurable for now */
+		pm_schedule_suspend(dev, host->idle_tout_ms);
+	}
 
 	return -EAGAIN;
 }
