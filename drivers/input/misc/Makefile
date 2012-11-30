@@ -64,3 +64,4 @@ obj-$(CONFIG_INPUT_LTR502) 		+= ltr502.o
 obj-$(CONFIG_BOSCH_BMA250)		+= bma250.o
 obj-$(CONFIG_AVAGO_APDS990X)            += apds990x.o
 obj-$(CONFIG_INPUT_ISL29028)            += isl29028.o
+obj-$(CONFIG_INPUT_LIS3DH)              += lis3dh.o
