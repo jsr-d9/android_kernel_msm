@@ -105,7 +105,7 @@ static void gpio_bt_config(void)
 	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
 				|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 		gpio_bt_sys_rest_en = 16;
-	if(machine_is_msm8625q_skud())
+	if(machine_is_msm8625q_skud() || machine_is_msm8625q_skue())
 		gpio_bt_sys_rest_en = 35;
 	if (machine_is_msm8625_qrd7())
 		gpio_bt_sys_rest_en = 88;
@@ -1013,6 +1013,7 @@ void __init msm7627a_bt_power_init(void)
 				|| machine_is_msm8625_evb()
 				|| machine_is_msm8625_qrd5()
 				|| machine_is_msm8625q_skud()
+				|| machine_is_msm8625q_skue()
 				|| machine_is_msm8625_qrd7())) {
 			bt_vregs[i].min_level = 3300000;
 			dev_info(dev, "%s: set regulator %s min level to %d\n",
