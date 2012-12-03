@@ -168,6 +168,12 @@ config S5K4E1
 	  two mipi lanes, required for msm7x2xA platform.
 	  Say Y here if this is msm7x2xA variant platform.
 
+config AR0543
+	bool "Sensor ar0543 (BAYER 5M)"
+	default n
+	---help---
+	  Aptina Bayer Sensor with FixFocus
+
 config DW9712_ACT
 	bool "Lens actuator dw9721"
 	depends on MSM_CAMERA && S5K4E1
