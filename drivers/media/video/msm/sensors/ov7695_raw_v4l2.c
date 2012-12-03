@@ -481,9 +481,9 @@ static struct msm_sensor_output_info_t ov7695_raw_dimensions[] = {
 	{
 		.x_output                = 0x290,
 		.y_output                = 0x1E0,
-		.line_length_pclk        = 0x1388,
+		.line_length_pclk        = 0x2ea,
 		.frame_length_lines      = 0x218,
-		.vt_pixel_clk            = 84000000,
+		.vt_pixel_clk            = 12000000,
 		.op_pixel_clk            = 12000000,
 		.binning_factor          = 0,
 	},
