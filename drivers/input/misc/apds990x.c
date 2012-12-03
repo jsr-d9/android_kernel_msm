@@ -833,7 +833,8 @@ static ssize_t apds990x_store_als_poll_delay(struct device *dev,
 	mutex_lock(&data->update_lock);
 	data->als_poll_delay = val/1000;	// convert us => ms
 
-	poll_delay = 256 - (val/2720);	// the minimum is 2.72ms = 2720 us, maximum is 696.32ms
+	// val * 2 uses bigger integration time, which will provide more accurate output.
+	poll_delay = 256 - (val * 2 / 2720);	// the minimum is 2.72ms = 2720 us, maximum is 696.32ms
 	if (poll_delay >= 256)
 		data->als_atime = 255;
 	else if (poll_delay < 0)
