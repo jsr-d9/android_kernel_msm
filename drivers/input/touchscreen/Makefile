@@ -80,3 +80,7 @@ obj-$(CONFIG_TOUCHSCREEN_FT5X06)	+= ft5x06_ts.o
 obj-$(CONFIG_TOUCHSCREEN_MSM_LEGACY)		+= msm_touch.o
 obj-$(CONFIG_TOUCHSCREEN_CY8C_TS)	+= cy8c_ts.o
 obj-$(CONFIG_TOUCHSCREEN_CYTTSP_I2C_QC)       += cyttsp-i2c-qc.o
+#add by linxc for D9 Himax Touch Screen
+obj-$(CONFIG_TOUCHSCREEN_HIMAX)			+= himax_ts.o
+#add by hjl for i6 Elan Touch Screen
+obj-$(CONFIG_TOUCHSCREEN_ELAN_KTF2K)			+= ektf2k.o

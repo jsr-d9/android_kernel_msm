@@ -682,5 +682,11 @@ config INPUT_LIS3DH
           If you say yes here you get support for ST
           acceleration sensor LIS3DH.
 
+config INPUT_LTR558_D9
+	tristate "LTR558 light/proximity sensor support"
+	depends on I2C
+	default n
+	help
+	  Driver for D9 LTR558 light/proximity sensor.
 
 endif
