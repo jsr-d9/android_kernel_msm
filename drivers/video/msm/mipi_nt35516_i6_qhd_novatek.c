@@ -12,6 +12,10 @@
  */
 #define DEBUG
 
+#include <linux/delay.h>
+#include <linux/module.h>
+#include <mach/gpio.h>
+#include <mach/pmic.h>
 #include <mach/socinfo.h>
 
 #include "msm_fb.h"
@@ -19,10 +23,10 @@
 #include "mipi_NT35516.h"
 
 static struct msm_panel_common_pdata *mipi_novatek_nt35516_pdata;
-static struct dsi_buf nt35516_tx_buf;
-static struct dsi_buf nt35516_rx_buf;
+static struct dsi_buf novatek_nt35516_qhd_tx_buf;
+static struct dsi_buf novatek_nt35516_qhd_rx_buf;
 
-static int mipi_nt35516_bl_ctrl = 0;
+//static int mipi_nt35516_bl_ctrl = 0;
 static int gpio_backlight_en = 0;
 
 #define NT35516_SLEEP_OFF_DELAY 120
@@ -34,7 +38,7 @@ static char nt_exit_sleep[2] = {0x11, 0x00};
 static char nt_display_on[2] = {0x29, 0x00};
 static char nt_display_off[2] = {0x28, 0x00};
 static char nt_enter_sleep[2] = {0x10, 0x00};
-static char write_ram[2] = {0x2c, 0x00}; /* write ram */
+//static char write_ram[2] = {0x2c, 0x00}; /* write ram */
 
 static struct dsi_cmd_desc nt35516_display_off_cmds[] = {
 	{DTYPE_DCS_WRITE, 1, 0, 0, 10, sizeof(nt_display_off), nt_display_off},
@@ -812,7 +816,7 @@ static char video55[2] = {
   0x55, 0x00, 
 };
 
-static struct dsi_cmd_desc nt35516_video_display_on_cmds[] = {
+static struct dsi_cmd_desc novatek_nt35516_qhd_video_display_on_cmds[] = {
   {DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(video0), video0},
   {DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(video1), video1},
   {DTYPE_DCS_LWRITE, 1, 0, 0, 0, sizeof(video2), video2},
@@ -926,7 +930,7 @@ static int mipi_novatek_nt35516_qhd_lcd_on(struct platform_device *pdev)
 	}
 
 	if (ret == 0)
-		ret = mipi_dsi_cmd_bta_sw_trigger();
+		mipi_dsi_cmd_bta_sw_trigger();
 
 	pr_debug("%s: X\n", __func__);
 	return ret;
@@ -945,7 +949,7 @@ static int mipi_novatek_nt35516_qhd_lcd_off(struct platform_device *pdev)
 	if (mfd->key != MFD_KEY)
 		return -EINVAL;
 
-	mipi_dsi_cmds_tx(&nt35516_tx_buf, nt35516_display_off_cmds,
+	mipi_dsi_cmds_tx(&novatek_nt35516_qhd_tx_buf, nt35516_display_off_cmds,
 			ARRAY_SIZE(nt35516_display_off_cmds));
 
 	pr_debug("%s: X\n", __func__);
@@ -1031,13 +1035,18 @@ static struct platform_driver this_driver = {
 	},
 };
 
+static char pwm0[2] = {
+	0x51, 0x8C,
+};
+static struct dsi_cmd_desc novatek_nt35516_qhd_pwm_cmds[] = {
+	{DTYPE_DCS_LWRITE, 1, 0, 0, 1, sizeof(pwm0), pwm0},
+};
+
 static int old_bl_level;
 
 static void mipi_nt35516_set_backlight(struct msm_fb_data_type *mfd)
 {
-	int bl_level;
-	unsigned long flags;
-	bl_level = mfd->bl_level;
+	int bl_level = mfd->bl_level;
 	uint32_t spv = socinfo_get_platform_version();
 	
 	if (spv == 0x10000) {
@@ -1062,8 +1071,8 @@ static int ch_used[3];
 
 static int mipi_novatek_nt35516_qhd_lcd_init(void)
 {
-	mipi_dsi_buf_alloc(&nt35516_tx_buf, DSI_BUF_SIZE);
-	mipi_dsi_buf_alloc(&nt35516_rx_buf, DSI_BUF_SIZE);
+	mipi_dsi_buf_alloc(&novatek_nt35516_qhd_tx_buf, DSI_BUF_SIZE);
+	mipi_dsi_buf_alloc(&novatek_nt35516_qhd_rx_buf, DSI_BUF_SIZE);
 
 	return platform_driver_register(&this_driver);
 }

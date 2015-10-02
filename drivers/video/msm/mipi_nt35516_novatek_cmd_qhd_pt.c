@@ -105,7 +105,7 @@ static int mipi_cmd_novatek_nt35516_qhd_pt_init(void)
 	pinfo.mipi.dlane_swap = 0x01;
 	/* append EOT at the end of data burst */
 	pinfo.mipi.tx_eot_append = 0x01;
-	pinfo.mipi.tx_eot_ignore = 0;
+	pinfo.mipi.rx_eot_ignore = 0;
 
 	ret = mipi_novatek_nt35516_qhd_device_register(&pinfo, MIPI_DSI_PRIM,
 						MIPI_DSI_PANEL_WVGA_PT);
