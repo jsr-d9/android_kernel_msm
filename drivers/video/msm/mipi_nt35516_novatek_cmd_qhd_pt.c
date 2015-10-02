@@ -17,7 +17,7 @@
 
 static struct msm_panel_info pinfo;
 
-static struct mipi_dsi_phy_ctrl dsi_video_mode_phy_db = {
+static struct mipi_dsi_phy_ctrl dsi_cmd_mode_phy_db = {
 	/* DSI Bit Clock at 500 MHz, 2 lane, RGB888 */
 	/* regulator */
 	{0x13, 0x01, 0x01, 0x00, 0x00},
@@ -29,21 +29,21 @@ static struct mipi_dsi_phy_ctrl dsi_video_mode_phy_db = {
 	/* strength */
 	{0xbb, 0x02, 0x06, 0x00},
 	/* pll control */
-	{0x00, 0xec, 0x31, 0xd2, 0x00, 0x40, 0x37, 0x62,
+	{0x01, 0xec, 0x31, 0xd2, 0x00, 0x40, 0x37, 0x62,
 	0x01, 0x0f, 0x07,
 	0x05, 0x14, 0x03, 0x0, 0x0, 0x0, 0x20, 0x0, 0x02, 0x0},
 };
 
-static int mipi_video_novatek_nt35516_qhd_pt_init(void)
+static int mipi_cmd_novatek_nt35516_qhd_pt_init(void)
 {
 	int ret;
 
-	if (msm_fb_detect_client("mipi_video_novatek_nt35516_qhd"))
+	if (msm_fb_detect_client("mipi_cmd_novatek_nt35516_qhd"))
 		return 0;
 
 	pinfo.xres = 540;
 	pinfo.yres = 960;
-	pinfo.type = MIPI_VIDEO_PANEL;
+	pinfo.type = MIPI_CMD_PANEL;
 	pinfo.pdest = DISPLAY_1;
 	pinfo.wait_cycle = 0;
 	pinfo.bpp = 24;
@@ -59,11 +59,15 @@ static int mipi_video_novatek_nt35516_qhd_pt_init(void)
 	delayed from VSYNC active edge */
 	pinfo.lcdc.hsync_skew = 0;
 	pinfo.clk_rate = 499000000;
-	pinfo.bl_max = 250;
+	pinfo.bl_max = 160;
 	pinfo.bl_min = 1;
 	pinfo.fb_num = 2;
 
-	pinfo.mipi.mode = DSI_VIDEO_MODE;
+	pinfo.lcd.vsync_enable = TRUE;
+	pinfo.lcd.hw_vsync_mode = TRUE;
+	pinfo.lcd.refx100 = 6100; /* adjust refx100 to prevent tearing */	
+	
+	pinfo.mipi.mode = DSI_CMD_MODE;
 	/* send HSA and HE following VS/VE packet */
 	pinfo.mipi.pulse_mode_hsa_he = TRUE;
 	pinfo.mipi.hfp_power_stop = TRUE; /* LP-11 during the HFP period */
@@ -77,7 +81,7 @@ static int mipi_video_novatek_nt35516_qhd_pt_init(void)
 	pinfo.mipi.bllp_power_stop = TRUE;
 
 	pinfo.mipi.traffic_mode = DSI_BURST_MODE;
-	pinfo.mipi.dst_format =  DSI_VIDEO_DST_FORMAT_RGB888;
+	pinfo.mipi.dst_format =  DSI_CMD_DST_FORMAT_RGB888;
 	pinfo.mipi.vc = 0;
 	pinfo.mipi.rgb_swap = DSI_RGB_SWAP_RGB; /* RGB */
 	pinfo.mipi.data_lane0 = TRUE;
@@ -87,14 +91,21 @@ static int mipi_video_novatek_nt35516_qhd_pt_init(void)
 	pinfo.mipi.t_clk_pre = 0x2f;
 
 	pinfo.mipi.stream = 0; /* dma_p */
-	pinfo.mipi.mdp_trigger = DSI_CMD_TRIGGER_NONE;
+	pinfo.mipi.mdp_trigger = DSI_CMD_TRIGGER_SW_TE;
 	pinfo.mipi.dma_trigger = DSI_CMD_TRIGGER_SW;
 	pinfo.mipi.frame_rate = 60; /* FIXME */
 
-	pinfo.mipi.dsi_phy_db = &dsi_video_mode_phy_db;
+	pinfo.mipi.te_sel = 1; /* TE from vsync gpio */
+	pinfo.mipi.interleave_max = 1;
+	pinfo.mipi.insert_dcs_cmd = TRUE;
+	pinfo.mipi.wr_mem_continue = 0x3c;
+	pinfo.mipi.wr_mem_start = 0x2c;
+	
+	pinfo.mipi.dsi_phy_db = &dsi_cmd_mode_phy_db;
 	pinfo.mipi.dlane_swap = 0x01;
 	/* append EOT at the end of data burst */
 	pinfo.mipi.tx_eot_append = 0x01;
+	pinfo.mipi.tx_eot_ignore = 0;
 
 	ret = mipi_novatek_nt35516_qhd_device_register(&pinfo, MIPI_DSI_PRIM,
 						MIPI_DSI_PANEL_WVGA_PT);
@@ -105,4 +116,4 @@ static int mipi_video_novatek_nt35516_qhd_pt_init(void)
 	return ret;
 }
 
-module_init(mipi_video_novatek_nt35516_qhd_pt_init);
+module_init(mipi_cmd_novatek_nt35516_qhd_pt_init);
