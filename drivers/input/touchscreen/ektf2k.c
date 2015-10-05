@@ -25,6 +25,7 @@
 #include <linux/gpio.h>
 #include <linux/device.h>
 #include <linux/jiffies.h>
+#include <linux/regulator/consumer.h>
 
 /* for linux 2.6.36.3 */
 #include <linux/cdev.h>
@@ -50,7 +51,7 @@
 #define NORMAL_PKT		0x62
 #define TOUCH_REPORT		0x63
 
-#include <linux/ektf2k.h>
+#include <linux/input/ektf2k.h>
 
 #define REPORTED_TOUCH_RANGE	1024
 
@@ -456,6 +457,39 @@ static int elan_ktf2k_ts_register_interrupt(struct i2c_client *client)
 	return err;
 }
 
+static struct regulator *reg_ext_2v8 = 0;
+
+static int lcd_elan_ktf2k_power_onoff(int on)
+{
+	int rc;
+	pr_err("%s: on = %d\n", __func__, on);
+	if (!reg_ext_2v8) {
+		reg_ext_2v8 = regulator_get(NULL, "ext_2v8");
+		if (IS_ERR(reg_ext_2v8)) {
+			rc = PTR_ERR(reg_ext_2v8);
+			pr_err("%s: regulator not found, rc=%d\n", __func__, rc);
+			reg_ext_2v8 = NULL;
+			return -19;
+		}
+	}
+	if (on) {
+		rc = regulator_enable(reg_ext_2v8);
+		if (rc) {
+			pr_err("%s: regulator enable failed, rc=%d\n", __func__, rc);
+		} else {
+			pr_err("%s: (on) success\n", __func__);
+		}
+	} else {
+		rc = regulator_disable(reg_ext_2v8);
+		if (rc) {
+			pr_err("%s: regulator disable failed, rc=%d\n", __func__, rc);
+		} else {
+			pr_err("%s: (off) success\n", __func__);
+		}
+	}
+	return rc;
+}
+
 static int elan_ktf2k_ts_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
@@ -477,6 +511,8 @@ static int elan_ktf2k_ts_probe(struct i2c_client *client,
 		err = -ENOMEM;
 		goto err_alloc_data_failed;
 	}
+	
+	lcd_elan_ktf2k_power_onoff(1);
 
 	ts->elan_wq = create_singlethread_workqueue("elan_wq");
 	if (!ts->elan_wq) {
