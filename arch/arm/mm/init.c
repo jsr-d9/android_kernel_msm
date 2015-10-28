@@ -391,6 +391,7 @@ void __init find_membank0_hole(void)
 void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
 {
 	int i;
+	unsigned long min, max_low, max_high;
 
 #ifndef CONFIG_DONT_MAP_HOLE_AFTER_MEMBANK0
 	sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_cmp, NULL);
@@ -429,6 +430,14 @@ void __init arm_memblock_init(struct meminfo *mi, struct machine_desc *mdesc)
 
 	arm_mm_memblock_reserve();
 	arm_dt_memblock_reserve();
+
+	max_low = max_high = 0;
+	find_limits(&min, &max_low, &max_high);
+	pr_info("meminfo.nr_banks = %d \n", (int)meminfo.nr_banks);
+	pr_info("high_memory = 0x%lx (virt: 0x%lx) \n", (long)__virt_to_phys((unsigned long)high_memory), (long)high_memory);
+	//reserve_persist_ram(__pfn_to_phys(max_low), __pfn_to_phys(max_high));
+	pr_info("Reserve Persistent Ram at 0x%lx , size = 0x%x \n", (long)0x35000000, 0x200000);
+	memblock_reserve(0x35000000, 0x200000);
 
 	/* reserve any platform specific memblock areas */
 	if (mdesc->reserve)
@@ -474,6 +483,8 @@ void __init bootmem_init(void)
 	max_low = max_high = 0;
 
 	find_limits(&min, &max_low, &max_high);
+	pr_info("%s: min = %d, max_low = 0x%x, max_high = 0x%x \n", 
+		__func__, (int)min, (int)max_low, (int)max_high);
 
 	arm_bootmem_init(min, max_low);
 
