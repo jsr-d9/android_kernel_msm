@@ -38,6 +38,14 @@
 #include <linux/sm_event.h>
 #endif
 
+#if defined(CONFIG_JSR_D9) || defined(CONFIG_JSR_I6)
+#define CONFIG_JSR_BATTERY
+#endif
+
+#ifdef CONFIG_TOUCHSCREEN_HIMAX
+#include <linux/input/himax_ts.h>
+#endif
+
 #define	BATTERY_RPC_PROG		0x30000089
 #define	BATTERY_RPC_VER_5_1		0x00050001
 
@@ -444,10 +452,15 @@ void msm_battery_update_psy_status(void)
 	if (msm_battery_info.charger_status != charger_status) {
 		if (msm_battery_info.charger_status == CHARGER_STATUS_NULL) {
 			pr_debug("BATT: start charging\n");
+#ifdef CONFIG_TOUCHSCREEN_HIMAX
+			himax_set_chg_status(1);
+#endif
 			update_charger_type(charger_hardware);
 		} else if (charger_status == CHARGER_STATUS_NULL) {
 			pr_debug("BATT: end charging\n");
-
+#ifdef CONFIG_TOUCHSCREEN_HIMAX
+			himax_set_chg_status(0);
+#endif
 			if (msm_battery_info.current_charger_src & USB_CHG) {
 				pr_debug("BATT: usb pc charger removed\n");
 			} else if (msm_battery_info.current_charger_src & AC_CHG) {
